@@ -15,9 +15,14 @@ L = 50E-6    # H
 C = 11000E-6 # F
 R = 0.016 + 0.01 # Ohm (8V drop at 500A plus 10mOhm shunt resistance)
 
-currents     = erange(5, 600, 5)
+currents     = erange(5, 605, 5)
 voltages     = erange(50,350,50)
-temperatures = [20] # erange(20,100,20)
+temperatures = [25, 65, 85] # erange(20,100,20)
+
+# [high, low] gate driver isolation converter input voltages
+# these voltages have been determined empirically to result in 
+# [10,10], [15,15] and [18,15] V for the high and low voltage levels, respectively
+gatesupply_voltages = [[12.0,12.0], [17.2,17.2], [19.8, 17.2]] 
 
 fn = "table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
 	min(currents), max(currents),
@@ -28,14 +33,14 @@ fn = "table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
 ### transformation functions for output value calculation
 
 def HMP4040_CH2_settings(values):
-	v_out = 15
-	i_out = 0.05
+	v_out = values['gate_supply'][0]
+	i_out = 0.5
 	return [v_out, i_out]
 
 	
 def HMP4040_CH3_settings(values):
-	v_out = 15
-	i_out = 0.05
+	v_out = values['gate_supply'][1]
+	i_out = 0.5
 	return [v_out, i_out]
 
 	
@@ -45,11 +50,13 @@ def HMP4040_CH4_settings(values):
 	return [v_out, i_out]
 	
 	
-def udsin(t, phi, k, a, w, c):
+def udsin(t, phi, k, a, w, c): 
+	# underdamped sinusoidal oscillation
 	return k*math.exp(-a*t)*math.sin(w*t + phi) + c
 	
 	
-def udsin_prime(t, phi, k, a, w, c):
+def udsin_prime(t, phi, k, a, w, c): 
+	# first time derivative of the underdamped sinusoidal oscillation as defined above
 	return -a*k*math.exp(-a*t)*math.sin(w*t + phi) + w*k*math.exp(-a*t)*math.cos(w*t + phi)
 	
 	
@@ -129,9 +136,10 @@ def estimate_double_pulse_presets(values):
 ### output generation functions
 	
 def header_line(file):
-	file.write('#HMP4040-CH2-V\tHMP4040-CH2-I\tHMP4040-CH3-V\tHMP4040-CH3-I\tHMP4040-CH4-V\tHMP4040-CH4-I\tPSI91000-V\tPSI91000-I\tDPULSE-V\tDPULSE-I\tDPULSE-PRECHG-T\tDUT-TEMP\n')
-	file.write('#V\tA\tV\tA\tV\tA\tV\tA\tV\tA\ts\t°C\n')   
-
+#	file.write('#HMP4040-CH2-V\tHMP4040-CH2-I\tHMP4040-CH3-V\tHMP4040-CH3-I\tHMP4040-CH4-V\tHMP4040-CH4-I\tPSI91000-V\tPSI91000-I\tDPULSE-V\tDPULSE-I\tDPULSE-PRECHG-T\tDUT-TEMP\n')
+#	file.write('#V\tA\tV\tA\tV\tA\tV\tA\tV\tA\ts\t°C\n')   
+	file.write('"HMP4040-CH2-V";"HMP4040-CH2-I";"HMP4040-CH3-V";"HMP4040-CH3-I";"HMP4040-CH4-V";"HMP4040-CH4-I";"PSI91000-V";"PSI91000-I";"DPULSE-V";"DPULSE-I";"DPULSE-PRECHG-T";"DUT-TEMP"\n')
+	file.write('"V";"A";"V";"A";"V";"A";"V";"A";"V";"A";"s";"°C"\n') 
 	
 def add_line(file, values):
 	ch2 = HMP4040_CH2_settings(values)
@@ -148,9 +156,9 @@ def add_line(file, values):
 	file.write(
 		np.array2string(
 			cells, 
-			separator = '\t',  
+			separator = ';',  # '\t'
 			formatter = {'float_kind':lambda x: '%g' % x}
-			).strip('[ ').strip(']')+'\n'
+			).strip('[ ').strip(']').replace('\n ', '')+'\n'
 		)
 
 	
@@ -159,18 +167,23 @@ if __name__ == "__main__":
 	print('I = ', currents)
 	print('V = ', voltages)
 	print('T = ', temperatures)
+	print('Vg= ', gatesupply_voltages)
+	
 	f = open(fn, 'w+')
 	header_line(f)
 	# set of single acquisition parameters as a dict to enable
 	# iterating over more dimensions without changing function signatures
 	values = {'v_protect':375, 'v_tol':0.05} 
-	for t in temperatures:
-		values['temp'] = t
-		for v in voltages:
-			values['v_nom'] = v
-			for i in currents:
-				values['i_pk'] = i
-				add_line(f, values)
+	
+	for gate_supply in gatesupply_voltages:
+		values['gate_supply'] = gate_supply
+		for t in temperatures:
+			values['temp'] = t
+			for v in voltages:
+				values['v_nom'] = v
+				for i in currents:
+					values['i_pk'] = i
+					add_line(f, values)
 
 	f.close()
 
