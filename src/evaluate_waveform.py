@@ -380,18 +380,19 @@ def visualize_output():
 	for key in res.keys():
 		print("\t%s = %s" % (key, repr(res[key])))
 		
-
+	par['insertion_before_plot'] = ''
+	par['insertion_after_plot'] = ''
 	# generate gnuplot script for visualization and validation
-	f = open(plotfile_template, 'r', encoding='ANSI')
+	f = open(plotfile_template, 'r', encoding='cp1252')
 	plt = f.readlines()
 	f.close()
 	plt_output_filename = par['file_root'] + '.plt'
 	f = open(plt_output_filename, 'w+')
 	for line in plt: # replace all placeholders in the template file (same names as the dictionary keys)
 		for key in par.keys():
-			line = line.replace('{%s}'%key, repr(par[key]))
+			line = line.replace('{%s}'%key, str(par[key]))
 		for key in res.keys():
-			line = line.replace('{%s}'%key, repr(res[key]))			
+			line = line.replace('{%s}'%key, str(res[key]))			
 		f.write(line)
 	f.close()
 	

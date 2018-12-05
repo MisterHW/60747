@@ -1,5 +1,5 @@
 reset
-set term win enhanced
+set term wxt enhanced persist
 fn = '18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt'
 
 ###
@@ -10,10 +10,10 @@ t_delay     = 7.5e-05
 t_2nd_pulse = 5e-06
 t_zero      = 0
 
-I1_a = 708.4883186922577
-I1_b = 7310698.616830349
+I1_a = 708.488318692258
+I1_b = 7310698.616830353
 I2_a = 143.43176611687198
-I2_b = 7497161.346529449
+I2_b = 7497161.346529451
 I1(t) = I1_a + I1_b*t
 I2(t) = I2_a + I2_b*t
 
@@ -39,7 +39,7 @@ unset table
 
 set key box center right noautotitle
 set xzeroaxis
-set title "Doppelpulstest: '18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt'" font 'Verdana,14'
+set title "Doppelpulstest: 18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt" font 'Verdana,14'
 set mxtics 5
 set mytics 5 
 set grid
@@ -54,13 +54,14 @@ set obj rect from -5e-06*1E+6 , graph 0 to 4.5e-06*1E+6, graph 1
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
+
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\
 	fn skip headerlines u ($0*5e-10*1E+6 * decimation - t_offset_us):(column(1+1)) every decimation w l t "V_D_C",\
 	fn skip headerlines u ($0*5e-10*1E+6 * decimation - t_offset_us):(column(2+1)-Rshunt*column(3+1)) every decimation w l t "V_C_E",\
 	fn skip headerlines u ($0*5e-10*1E+6 * decimation - t_offset_us):(column(0+1)) every decimation w l t "V_G_E",\
 	fn skip headerlines u ($0*5e-10 *1E+6 * decimation - t_offset_us):(column(3+1)) every decimation w l t "I_E"
-	
+
  
 	 
 	 

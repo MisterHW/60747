@@ -1,6 +1,6 @@
 reset
-set term win enhanced
-fn = {file_base}
+set term wxt enhanced persist
+fn = '{file_base}'
 
 ###
 Rshunt      = {R_shunt}
@@ -54,13 +54,14 @@ set obj rect from {tAOI_turn_on_bounds_start}*1E+6 , graph 0 to {tAOI_turn_on_bo
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
+{insertion_before_plot}
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\
 	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC}+1)) every decimation w l t "V_D_C",\
 	fn skip headerlines u ($0*{TS_VCE}*1E+6 * decimation - t_offset_us):(column({CH_VCE}+1)-Rshunt*column({CH_IE}+1)) every decimation w l t "V_C_E",\
 	fn skip headerlines u ($0*{TS_VGE}*1E+6 * decimation - t_offset_us):(column({CH_VGE}+1)) every decimation w l t "V_G_E",\
 	fn skip headerlines u ($0*{TS_IE} *1E+6 * decimation - t_offset_us):(column({CH_IE}+1)) every decimation w l t "I_E"
-	
+{insertion_after_plot}
  
 	 
 	 
