@@ -92,7 +92,7 @@ class WaveformAnalyzer:
 	def lin_fit(self, tAOI):
 		a, b, success = 0, 0, False # polynomial coefficients for p(x) * a + b*x and success result
 		sAOI = list(map(round, self.time_to_smp(tAOI)))
-		s_y = self.s[sAOI[0]:sAOI[1]+1]
+		s_y = self.s[int(sAOI[0]):int(sAOI[1])+1]
 		nsmp = len(s_y)
 		if nsmp > 1:
 			# formula: https://en.wikipedia.org/wiki/Simple_linear_regression
@@ -112,16 +112,48 @@ class WaveformAnalyzer:
 		return [a,b, success]
 		
 		
-	def find_level_crossing(self, tAOI, level, edge='both'):
-		#	find level crossing within time AOI 
-		success = False
-		t, dydt = None, 0
+	def find_level_crossing(self, tAOI, level, edge='both', t_edge=0):
+		### find level crossing through <edge> within a <time AOI> region
+		edge_both = edge != 'rising' and edge != 'falling'
+		# t_edge helps define the minimum number of samples for threshold detection
+		tau_samples  = 1 # relevant timescale of the transition around trigger
+		if (t_edge > self.timebase) and (self.timebase > 0):
+			tau_samples = np.ceil(t_edge/self.timebase)
 		# prepare data 
 		sAOI = list(map(round, self.time_to_smp(tAOI)))
 		s_y = self.s[sAOI[0]:sAOI[1]+1]
-		#	find first crossing with appropriate edge type 
-		#	define time interval around crossing
-		#	generate linear fit and re-calculate intersection
+		#	detect edge
+		# see https://dsp.stackexchange.com/questions/30039/detect-to-rising-stable-and-falling-point-in-non-smooth-rectangular-wave ?
+		# see http://chamilo2.grenet.fr/inp/courses/ENSE3A35EMIAAZ0/document/change_detection.pdf
+		prelim_trig_x = None # index of element at level crossing
+		threshold = np.full((1,len(s_y)), level)
+		s_y_above = np.greater(s_y, threshold)
+		changed_state = None 
+		if edge_both:
+			changed_state = not s_y_above[0]
+		if edge == 'rising':
+			changed_state = True
+		if edge == 'falling':
+			changed_state = False
+		try:
+			prelim_trig_x = s_y_above.tolist()[0].index(changed_state) - 1
+		except:
+			# error: no transition found
+			return [None, 0]
+		
+		if tau_samples > 2:
+			tAOI_fit = self.smp_to_time([sAOI[0] + prelim_trig_x - tau_samples, sAOI[0] + prelim_trig_x + tau_samples])
+			fitres = self.lin_fit(tAOI_fit)
+			if fitres[2] == False:
+				# error: fit failed
+				return [None, 0]
+			# find intersection of fit by solving for t: level == fitres[0] + fitres[1] * t
+			t = (level - fitres[0])/fitres[1]
+			dydt = fitres[1]
+		else:
+			t = self.smp_to_time([sAOI[0] + prelim_trig_x])[0]
+			dydt = 0
+		#	define time interval around crossing and generate linear fit and re-calculate intersection
 		return [t, dydt]
 		
 
@@ -140,15 +172,15 @@ class WaveformAnalyzer:
 		
 
 def arithmetic_operation(WFA_list, tAOI, func, generate_time_coords = False):
-# assume equidistant samples, find smallest timestep via list of AOI sample lengths
+	# assume equidistant samples, find smallest timestep via list of AOI sample lengths
 	n = [np.dot(wfa.time_to_smp(tAOI), [-1, 1]) + 1 for wfa in WFA_list]
 	n_max = max(n)
 	first_match_index = lambda list, value: next((idx for idx,val in enumerate(list) if val == value), 0) 
 	idx_max = first_match_index(n, n_max)
 	n_max = int(round(n_max)) # force integer to avoid float type aliasing / array length mismatch (+/-1 errors)	
-# prepare resampled data 
+	# prepare resampled data 
 	rdata = np.array([wfa.resampled_region(tAOI, n_max) for wfa in WFA_list]).transpose()
-# feed list of individual samples to arithmetic function
+	# feed list of individual samples to arithmetic function
 	outp_t = []
 	outp_y = list(map(func, rdata))	
 	if generate_time_coords:

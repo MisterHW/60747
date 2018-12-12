@@ -11,6 +11,7 @@
 
 
 import os.path
+import sys 
 import numpy as np
 import wfa
 
@@ -31,12 +32,16 @@ timebase_keys = [
 'dt Cha.1 [Sek]', 'dt Cha.2 [Sek]', 'dt Cha.3 [Sek]', 'dt Cha.4 [Sek]'
 ]
 
-# higher-level analysis description paramters and results in dictionary form
+
 CH = []
+same_path_as_script = lambda filename: os.path.join(os.path.dirname(__file__), filename)
+# higher-level analysis description paramters and results in dictionary form
 hdr = {} # header data (dict)
 par = {} # analysis parameters (dict)
 res = {} # results (dict)
-plotfile_template = 'gnuplot_template.plt'
+plotfile_template = same_path_as_script('gnuplot_template.plt')
+
+
 
 
 def assign_basic_analysis_parameters():
@@ -251,7 +256,8 @@ def extract_timing_markers():
 	t_off_t1 = CH[par['CH_VGE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.9 * res['V_GE_high'],
-		edge  = 'falling' )	
+		edge  = 'falling',
+		t_edge= 0 )	
 	if t_off_t1[0] == None: 
 		print('Error: failed to evaluate turn_off_t1 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 	else:
@@ -262,7 +268,8 @@ def extract_timing_markers():
 	t_off_t2 = CH[par['CH_IE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.9 * res['Ipk_turnoff'],
-		edge  = 'falling' )	
+		edge  = 'falling',
+		t_edge= 6E-9 )	
 	if t_off_t2[0] == None: 
 		print('Error: failed to evaluate turn_off_t2 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 	else:
@@ -273,7 +280,8 @@ def extract_timing_markers():
 	t_off_t3 = CH[par['CH_IE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.1 * res['Ipk_turnoff'],
-		edge  = 'falling' )	
+		edge  = 'falling',
+		t_edge= 6E-9 )	
 	if t_off_t3[0] == None: 
 		print('Error: failed to evaluate turn_off_t3 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 	else:
@@ -284,7 +292,8 @@ def extract_timing_markers():
 	t_off_t4 = CH[par['CH_IE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.02 * res['Ipk_turnoff'],
-		edge  = 'falling' )	
+		edge  = 'falling',
+		t_edge= 6E-9 )	
 	if t_off_t4[0] == None: 
 		print('Error: failed to evaluate turn_off_t4 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 	else:
@@ -296,7 +305,8 @@ def extract_timing_markers():
 	t_on_t1 = CH[par['CH_VGE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_on_bounds'],
 		level = 0.1 * res['V_GE_high'],
-		edge  = 'rising' )	
+		edge  = 'rising',
+		t_edge= 6E-9 )	
 	if t_on_t1[0] == None: 
 		print('Error: failed to evaluate turn_on_t1 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
 	else:
@@ -307,7 +317,8 @@ def extract_timing_markers():
 	t_on_t2 = CH[par['CH_IE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_on_bounds'],
 		level = 0.1 * res['Ipk_turnoff'],
-		edge  = 'rising' )	
+		edge  = 'rising',
+		t_edge= 6E-9 )	
 	if t_on_t2[0] == None: 
 		print('Error: failed to evaluate turn_on_t2 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
 	else:
@@ -318,7 +329,8 @@ def extract_timing_markers():
 	t_on_t3 = CH[par['CH_IE']].find_level_crossing(
 		tAOI  = par['tAOI_turn_on_bounds'],
 		level = 0.9 * res['Ipk_turnoff'],
-		edge  = 'rising' )	
+		edge  = 'rising',
+		t_edge= 6E-9 )	
 	if t_on_t3[0] == None: 
 		print('Error: failed to evaluate turn_on_t3 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
 	else:
@@ -329,7 +341,8 @@ def extract_timing_markers():
 	t_on_t4 = CH[par['CH_VCE_corr']].find_level_crossing(
 		tAOI  = par['tAOI_turn_on_bounds'],
 		level = 0.02 * res['V_DC'],
-		edge  = 'falling' )	
+		edge  = 'falling',
+		t_edge= 6E-9 )	
 	if t_on_t4[0] == None: 
 		print('Error: failed to evaluate turn_on_t4 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
 	else:
@@ -337,10 +350,10 @@ def extract_timing_markers():
 		res['turn_on_t4_slope'] = t_on_t4[1]	
 	
 	# if successful, specify AOIs
-	if 'turn_off_t1' in par and 'turn_off_t4' in par:
-		res['tAOI_1st_losses'] = [par['turn_off_t1'], par['turn_off_t4']] 
-	if 'turn_on_t1' in par and 'turn_on_t4' in par:		
-		res['tAOI_2nd_losses'] = [par['turn_on_t1'] , par['turn_on_t4']] 
+	if 'turn_off_t1' in res and 'turn_off_t4' in res:
+		res['tAOI_1st_losses'] = [res['turn_off_t1'], res['turn_off_t4']] 
+	if 'turn_on_t1' in res and 'turn_on_t4' in res:		
+		res['tAOI_2nd_losses'] = [res['turn_on_t1'] , res['turn_on_t4']] 
 
 	
 def calculate_double_pulse_test_quantities():
@@ -366,7 +379,7 @@ def calculate_double_pulse_test_quantities():
 			tAOI = res['tAOI_2nd_losses'], 
 			func = multiply,
 			generate_time_coords = True )
-		res['E_turnon_J'] = np.trapz(turnon_prod[1], turnoff_prod[0])
+		res['E_turnon_J'] = np.trapz(turnon_prod[1], turnon_prod[0])
 
 	
 def visualize_output():
@@ -382,6 +395,31 @@ def visualize_output():
 		
 	par['insertion_before_plot'] = ''
 	par['insertion_after_plot'] = ''
+	
+	# FIXME: find a way to add values conditionally (e.g. by introducing an err dict with NaN for automatic replacements that don't break the gnuplot code. Gnuplot should accept 1/0 as NaN)
+	if ('tAOI_1st_losses' in res):
+		par['insertion_before_plot'] += 'set x2tics add ("A" %g*1E+6)\n' % res['turn_off_t1']
+		par['insertion_before_plot'] += 'set x2tics add ("B" %g*1E+6)\n' % res['turn_off_t2']
+		par['insertion_before_plot'] += 'set x2tics add ("C" %g*1E+6)\n' % res['turn_off_t3']
+		par['insertion_before_plot'] += 'set x2tics add ("D" %g*1E+6)\n' % res['turn_off_t4']
+		par['insertion_before_plot'] += '''
+set label 1 "90% V_G_E" at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front rotate by 45
+set label 2 "90% I_p_k" at {turn_off_t2}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 3 "10% I_p_k" at {turn_off_t3}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 4 "2% I_p_k" at {turn_off_t4}*1E+6, 0.02*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+'''
+	if ('tAOI_2nd_losses' in res):                        
+		par['insertion_before_plot'] += 'set x2tics add ("E" %g*1E+6)\n' % res['turn_on_t1']
+		par['insertion_before_plot'] += 'set x2tics add ("F" %g*1E+6)\n' % res['turn_on_t2']
+		par['insertion_before_plot'] += 'set x2tics add ("G" %g*1E+6)\n' % res['turn_on_t3']
+		par['insertion_before_plot'] += 'set x2tics add ("H" %g*1E+6)\n' % res['turn_on_t4']
+		par['insertion_before_plot'] += '''
+set label 5 "10% V_G_E" at {turn_on_t1}*1E+6, 0.1*{V_GE_high} point pt 1 ps 2 front rotate by 45
+set label 6 "10% I_p_k" at {turn_on_t2}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 7 "90% I_p_k" at {turn_on_t3}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*{V_DC} point pt 1 ps 2 front rotate by 45		
+'''
+	
 	# generate gnuplot script for visualization and validation
 	f = open(plotfile_template, 'r', encoding='cp1252')
 	plt = f.readlines()

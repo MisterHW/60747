@@ -37,19 +37,23 @@ plot tmp
 unset table 
 
 
-set key box center right noautotitle
+set key box top right noautotitle
 set xzeroaxis
 set title "Doppelpulstest: {file_base}" font 'Verdana,14'
 set mxtics 5
 set mytics 5 
-set grid
+set xtics nomirror
+set x2tics font 'Verdana Bold, 12' offset 0, -0.25
+set format x2 ""
+set grid ytics x2tics
 
-decimation = 10
+decimation = 1
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6
 set xrange [-t_offset_us:t_offset_us]
+set x2range [-t_offset_us:t_offset_us]
 
 set style rect fc lt -1 fs transparent solid 0.1 noborder
-set obj rect from {tAOI_turn_off_bounds_start}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6 , graph 1
+set obj rect from {tAOI_turn_off_bounds_start}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
 set obj rect from {tAOI_turn_on_bounds_start}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
 
 set xlabel 'time (µs)'
@@ -57,10 +61,10 @@ set ylabel 'voltage (V) / current (A)'
 {insertion_before_plot}
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\
-	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC}+1)) every decimation w l t "V_D_C",\
-	fn skip headerlines u ($0*{TS_VCE}*1E+6 * decimation - t_offset_us):(column({CH_VCE}+1)-Rshunt*column({CH_IE}+1)) every decimation w l t "V_C_E",\
-	fn skip headerlines u ($0*{TS_VGE}*1E+6 * decimation - t_offset_us):(column({CH_VGE}+1)) every decimation w l t "V_G_E",\
-	fn skip headerlines u ($0*{TS_IE} *1E+6 * decimation - t_offset_us):(column({CH_IE}+1)) every decimation w l t "I_E"
+	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC}+1)) every decimation w l lw 2 t "V_D_C",\
+	fn skip headerlines u ($0*{TS_VCE}*1E+6 * decimation - t_offset_us):(column({CH_VCE}+1)-Rshunt*column({CH_IE}+1)) every decimation w l lw 2 t "V_C_E",\
+	fn skip headerlines u ($0*{TS_VGE}*1E+6 * decimation - t_offset_us):(column({CH_VGE}+1)) every decimation w l lw 2 t "V_G_E",\
+	fn skip headerlines u ($0*{TS_IE}*1E+6 * decimation - t_offset_us):(column({CH_IE}+1)) every decimation w l lw 2 t "I_E"
 {insertion_after_plot}
  
 	 
