@@ -74,10 +74,10 @@ def assign_advanced_analysis_parameters():
 	par['t_2nd_rise_nom'] = 0 # coincident with trigger (not accounting for propagation delay in the LWL and gate driver circuitry)
 	par['t_2nd_fall_nom'] = par['t_2nd_duration']
 	# switching event regions
-	par['tAOI_turn_off_bounds'] = [par['t_1st_fall_nom'] - 5E-6, par['t_1st_fall_nom'] + par['t_inter_pulse_duration'] * 0.9]
+	par['tAOI_turn_off_bounds'] = [par['t_1st_fall_nom'] - 0, par['t_1st_fall_nom'] + par['t_inter_pulse_duration'] * 0.9]
 	par['tAOI_turn_off_bounds_start'] = par['tAOI_turn_off_bounds'][0]
 	par['tAOI_turn_off_bounds_end']   = par['tAOI_turn_off_bounds'][1]
-	par['tAOI_turn_on_bounds']  = [par['t_2nd_rise_nom'] - 5E-6, par['t_2nd_rise_nom'] + par['t_2nd_duration'] * 0.9]
+	par['tAOI_turn_on_bounds']  = [par['t_2nd_rise_nom'] - 0.5E-6, par['t_2nd_rise_nom'] + par['t_2nd_duration'] * 0.9]
 	par['tAOI_turn_on_bounds_start'] = par['tAOI_turn_on_bounds'][0]
 	par['tAOI_turn_on_bounds_end']   = par['tAOI_turn_on_bounds'][1]
 	# analysis areas of interest (unit: seconds)
@@ -85,10 +85,14 @@ def assign_advanced_analysis_parameters():
 	par['tAOI_V_GE_high'] = [par['t_1st_fall_nom']- 2E-6, par['t_1st_fall_nom']- 0.5E-6] # AOI for on-state gate voltage estimation
 	par['tAOI_V_DC'] = [par['t_1st_fall_nom'] + 5E-6, par['t_2nd_rise_nom'] - 2E-6] # AOI for DC link voltage estimation after first pulse
 	par['tAOI_V_CE'] = [par['t_1st_fall_nom'] - 2E-6, par['t_1st_fall_nom'] - 0E-6] # AOI for CE saturation voltage estimation close to peak current (not compensated for drop across shunt)
-	par['tAOI_Ipk_1st_fall'] = [par['t_1st_fall_nom']-5E-6,par['t_1st_fall_nom']+5E-6] # AOI for peak turn-off current detection
+	par['tAOI_Ipk_1st_fall'] = [par['t_1st_fall_nom']-0.5E-6,par['t_1st_fall_nom']+5E-6] # AOI for peak turn-off current detection
 	par['tAOI_Ipk_2nd_rise'] = [par['t_2nd_rise_nom']+0,par['t_2nd_rise_nom']+2E-6] # AOI for peak turn-on current detection
-	par['tAOI_I_1st_fit'] = [par['t_1st_fall_nom']-0.5*par['t_1st_duration'],par['t_1st_fall_nom']-0] # AOI for first pulse current rise (fit near end)
-	par['tAOI_I_2nd_fit'] = [par['t_2nd_rise_nom']+1.5E-6,par['t_2nd_rise_nom']+5E-6] # AOI for second pulse current rise (fit near beginning)
+	par['tAOI_I_1st_fit'] = [
+		par['t_1st_fall_nom'] - max(min(10E-6, 0.8*par['t_1st_duration']), 0.5E-6),
+		par['t_1st_fall_nom'] - 0] # AOI for first pulse current rise (fit near end)
+	par['tAOI_I_2nd_fit'] = [
+		par['t_2nd_rise_nom'] + 1.5E-6,
+		par['t_2nd_rise_nom'] + max(min(10E-6, 0.8*par['t_2nd_duration']), 2.5E-6)] # AOI for second pulse current rise (fit near beginning)
 
 ##################################################
 	
@@ -440,6 +444,16 @@ def store_results():
 	return
 	
 	
+def clean_up():
+	global CH, hdr, par, res
+	for c in CH:
+		del c
+	CH = []
+	hdr = {} 
+	par = {} 
+	res = {}
+	
+	
 def process_file(filename):
 	
 	print("processing:\n\t'%s'" % filename)
@@ -455,6 +469,8 @@ def process_file(filename):
 	
 	visualize_output()
 	store_results()
+	print("")
+	clean_up()
 
 
 	

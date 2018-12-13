@@ -141,19 +141,24 @@ class WaveformAnalyzer:
 			# error: no transition found
 			return [None, 0]
 		
+		t, dydt = None, 0
 		if tau_samples > 2:
-			tAOI_fit = self.smp_to_time([sAOI[0] + prelim_trig_x - tau_samples, sAOI[0] + prelim_trig_x + tau_samples])
+			tAOI_fit = self.smp_to_time([
+				sAOI[0] + prelim_trig_x - tau_samples, 
+				sAOI[0] + prelim_trig_x + tau_samples]
+				)
 			fitres = self.lin_fit(tAOI_fit)
 			if fitres[2] == False:
 				# error: fit failed
 				return [None, 0]
-			# find intersection of fit by solving for t: level == fitres[0] + fitres[1] * t
+			# find intersection of fit line with trigger level 
+			# by solving for t: level == fitres[0] + fitres[1] * t
 			t = (level - fitres[0])/fitres[1]
 			dydt = fitres[1]
 		else:
 			t = self.smp_to_time([sAOI[0] + prelim_trig_x])[0]
 			dydt = 0
-		#	define time interval around crossing and generate linear fit and re-calculate intersection
+			
 		return [t, dydt]
 		
 
