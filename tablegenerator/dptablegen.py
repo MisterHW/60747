@@ -15,9 +15,10 @@ L = 50E-6    # H
 C = 11000E-6 # F
 R = 0.016 + 0.01 # Ohm (8V drop at 500A plus 10mOhm shunt resistance)
 
-currents     = erange(5, 605, 5)
+currents     = erange( 5,605,25)
 voltages     = erange(50,350,50)
-temperatures = [25, 65, 85] # erange(20,100,20)
+protection_voltage = 375
+temperatures = [26.3, 65.4, 84.8] # erange(20,100,20)
 
 # [high, low] gate driver isolation converter input voltages
 # these voltages have been determined empirically to result in 
@@ -33,13 +34,13 @@ fn = "table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
 ### transformation functions for output value calculation
 
 def HMP4040_CH2_settings(values):
-	v_out = values['gate_supply'][0]
+	v_out = values['gate_supply'][1]
 	i_out = 0.5
 	return [v_out, i_out]
 
 	
 def HMP4040_CH3_settings(values):
-	v_out = values['gate_supply'][1]
+	v_out = values['gate_supply'][0]
 	i_out = 0.5
 	return [v_out, i_out]
 
@@ -65,7 +66,7 @@ def estimate_double_pulse_presets(values):
 	i_lim = 5.0 # power supply current limit
 	I_pk  = values['i_pk']
 	v_nom = values['v_nom'] 
-	v_set = v_nom
+	v_set = v_nom # starting value
 	v_tol = values['v_tol']
 	v_protect = values['v_protect']
 	
@@ -173,7 +174,7 @@ if __name__ == "__main__":
 	header_line(f)
 	# set of single acquisition parameters as a dict to enable
 	# iterating over more dimensions without changing function signatures
-	values = {'v_protect':375, 'v_tol':0.05} 
+	values = {'v_protect':protection_voltage, 'v_tol':0.05} 
 	
 	for gate_supply in gatesupply_voltages:
 		values['gate_supply'] = gate_supply
