@@ -1,5 +1,6 @@
 reset
 set term wxt enhanced persist
+nan = NaN
 fn = '18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt'
 
 ###
@@ -10,10 +11,10 @@ t_delay     = 7.5e-05
 t_2nd_pulse = 5e-06
 t_zero      = 0
 
-I1_a = 708.4883186922577
-I1_b = 7310698.616830349
-I2_a = 143.43176611687198
-I2_b = 7497161.346529449
+I1_a = 708.4228771496361
+I1_b = 7309873.5271585295
+I2_a = 143.58843549063255
+I2_b = 7434310.974396518
 I1(t) = I1_a + I1_b*t
 I2(t) = I2_a + I2_b*t
 
@@ -37,7 +38,7 @@ plot tmp
 unset table 
 
 
-set key box center right noautotitle
+set key box top right noautotitle
 set xzeroaxis
 set title "Doppelpulstest: 18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt" font 'Verdana,14'
 set mxtics 5
@@ -47,31 +48,36 @@ set x2tics font 'Verdana Bold, 12' offset 0, -0.25
 set format x2 ""
 set grid ytics x2tics
 
-decimation = 2
+decimation = 10
 t_offset_us = 5e-10*400002 * 0.5 * 1E+6
 set xrange [-t_offset_us:t_offset_us]
 set x2range [-t_offset_us:t_offset_us]
 
 set style rect fc lt -1 fs transparent solid 0.1 noborder
-set obj rect from -7.999999999999999e-05*1E+6, graph 0 to -7.4999999999999926e-06*1E+6, graph 1
-set obj rect from -5e-06*1E+6 , graph 0 to 4.5e-06*1E+6, graph 1
+set obj rect from -7.5e-05*1E+6, graph 0 to -7.4999999999999926e-06*1E+6, graph 1
+set obj rect from -5e-07*1E+6 , graph 0 to 4.5e-06*1E+6, graph 1
 
-# debug markers
-set label 1 "90% V_G_E" at -7.49185e-05*1E+6, 0.9*14.869999668 point pt 1 ps 2 front rotate by 45
-set label 2 "90% I_p_k" at -8e-05*1E+6, 0.9*163.599997222 point pt 1 ps 2 front rotate by 45
-set label 3 "10% I_p_k" at -7.40875e-05*1E+6, 0.1*163.599997222 point pt 1 ps 2 front rotate by 45
-set label 4 "2% I_p_k" at -7.3753e-05*1E+6, 0.02*163.599997222 point pt 1 ps 2 front rotate by 45
-set label 5 "10% V_G_E" at 5.105e-07*1E+6, 0.1*14.869999668 point pt 1 ps 2 front rotate by 45
-set label 6 "10% I_p_k" at 5.89e-07*1E+6, 0.1*163.599997222 point pt 1 ps 2 front rotate by 45
-set label 7 "90% I_p_k" at 6.505000000000001e-07*1E+6, 0.9*163.599997222 point pt 1 ps 2 front rotate by 45
-set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*351.400000021 point pt 1 ps 2 front rotate by 45
+set x2tics add ("A" -7.4919e-05*1E+6)
+set x2tics add ("B" -7.423173908942138e-05*1E+6) 
+set x2tics add ("C" -7.408272671421876e-05*1E+6) 
+set x2tics add ("D" -7.374326038775288e-05*1E+6)
+set label 1 "90% V_G_E" at -7.4919e-05*1E+6, 0.9*14.869999668 point pt 1 ps 2 front rotate by 45
+set label 2 "90% I_p_k" at -7.423173908942138e-05*1E+6, 0.9*163.799997225 point pt 1 ps 2 front rotate by 45
+set label 3 "10% I_p_k" at -7.408272671421876e-05*1E+6, 0.1*163.799997225 point pt 1 ps 2 front rotate by 45
+set label 4 "2% I_p_k" at -7.374326038775288e-05*1E+6, 0.02*163.799997225 point pt 1 ps 2 front rotate by 45
+
+set x2tics add ("E" 5.099152428061956e-07*1E+6)
+set x2tics add ("F" 5.889479972352382e-07*1E+6)
+set x2tics add ("G" 6.504610981006978e-07*1E+6)
+set x2tics add ("H" nan*1E+6)
+set label 5 "10% V_G_E" at 5.099152428061956e-07*1E+6, 0.1*14.869999668 point pt 1 ps 2 front rotate by 45
+set label 6 "10% I_p_k" at 5.889479972352382e-07*1E+6, 0.1*163.799997225 point pt 1 ps 2 front rotate by 45
+set label 7 "90% I_p_k" at 6.504610981006978e-07*1E+6, 0.9*163.799997225 point pt 1 ps 2 front rotate by 45
+set label 8 "2% V_D_C" at nan*1E+6, 0.02*351.400000021 point pt 1 ps 2 front rotate by 45		
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
-set x2tics add ("A" -7.49185e-05*1E+6)
-set x2tics add ("B" -8e-05*1E+6)
-set x2tics add ("C" -7.40875e-05*1E+6)
-set x2tics add ("D" -7.3753e-05*1E+6)
+set label 10000 "{/:Bold FAILED: turn\\_on\\_t4, turn\\_on\\_t4\\_slope, tAOI\\_2nd\\_losses, E\\_turnon\\_J}" font "Verdana,16" tc rgb "red" at graph 0.05, graph 0.9 front
 
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\

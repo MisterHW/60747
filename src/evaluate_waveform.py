@@ -39,6 +39,7 @@ same_path_as_script = lambda filename: os.path.join(os.path.dirname(__file__), f
 hdr = {} # header data (dict)
 par = {} # analysis parameters (dict)
 res = {} # results (dict)
+err = {} # errors / quantities that failed to evaluate (contains defaults or NaN)
 plotfile_template = same_path_as_script('gnuplot_template.plt')
 
 
@@ -55,6 +56,7 @@ def assign_basic_analysis_parameters():
 
 	
 def assign_advanced_analysis_parameters():
+	print("parameters:")		
 	global hdr, par
 	# scope channel mapping
 	par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
@@ -142,7 +144,7 @@ def read_file_header_and_data(filename):
 	fn_root, fn_extension = os.path.splitext(filename)
 	if fn_extension != par['file_ext']:
 		print("\t file extension mismatch -> skipped")
-		return
+		return False
 	par['file_root'] = fn_root
 	par['file_base'] = os.path.basename(filename)
 	
@@ -181,6 +183,8 @@ def read_file_header_and_data(filename):
 			timebase_unitstr = 's',
 			id_str           = 'Channel %d' % (n+1)
 		) for n in range(0,par['ndatacols']) ]
+		
+	return True
 		
 		
 def create_corrected_VCE_channel():
@@ -252,7 +256,7 @@ def extract_voltage_and_current_values():
 	res['V_CE_turnoff'] = CH[par['CH_VCE_corr']].average(par['tAOI_V_CE'])
 		
 def extract_timing_markers():
-	global CH, par, res 
+	global CH, par, res, err
 	
 	### extract waveform timing according to IEC60747-9 definitions
 	
@@ -264,6 +268,8 @@ def extract_timing_markers():
 		t_edge= 0 )	
 	if t_off_t1[0] == None: 
 		print('Error: failed to evaluate turn_off_t1 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
+		err['turn_off_t1'] = np.nan
+		err['turn_off_t1_slope'] = np.nan
 	else:
 		res['turn_off_t1'] = t_off_t1[0]
 		res['turn_off_t1_slope'] = t_off_t1[1]
@@ -276,6 +282,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_off_t2[0] == None: 
 		print('Error: failed to evaluate turn_off_t2 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
+		err['turn_off_t2'] = np.nan
+		err['turn_off_t2_slope'] = np.nan
 	else:
 		res['turn_off_t2'] = t_off_t2[0]
 		res['turn_off_t2_slope'] = t_off_t2[1]
@@ -288,6 +296,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_off_t3[0] == None: 
 		print('Error: failed to evaluate turn_off_t3 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
+		err['turn_off_t3'] = np.nan
+		err['turn_off_t3_slope'] = np.nan
 	else:
 		res['turn_off_t3'] = t_off_t3[0]
 		res['turn_off_t3_slope'] = t_off_t3[1]
@@ -300,6 +310,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_off_t4[0] == None: 
 		print('Error: failed to evaluate turn_off_t4 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
+		err['turn_off_t4'] = np.nan
+		err['turn_off_t4_slope'] = np.nan
 	else:
 		res['turn_off_t4'] = t_off_t4[0]
 		res['turn_off_t4_slope'] = t_off_t4[1]
@@ -313,6 +325,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_on_t1[0] == None: 
 		print('Error: failed to evaluate turn_on_t1 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
+		err['turn_on_t1'] = np.nan
+		err['turn_on_t1_slope'] = np.nan
 	else:
 		res['turn_on_t1'] = t_on_t1[0]
 		res['turn_on_t1_slope'] = t_on_t1[1]
@@ -325,6 +339,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_on_t2[0] == None: 
 		print('Error: failed to evaluate turn_on_t2 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
+		err['turn_on_t2'] = np.nan
+		err['turn_on_t2_slope'] = np.nan
 	else:
 		res['turn_on_t2'] = t_on_t2[0]
 		res['turn_on_t2_slope'] = t_on_t2[1]
@@ -337,6 +353,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_on_t3[0] == None: 
 		print('Error: failed to evaluate turn_on_t3 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
+		err['turn_on_t3'] = np.nan
+		err['turn_on_t3_slope'] = np.nan
 	else:
 		res['turn_on_t3'] = t_on_t3[0]
 		res['turn_on_t3_slope'] = t_on_t3[1]
@@ -349,6 +367,8 @@ def extract_timing_markers():
 		t_edge= 6E-9 )	
 	if t_on_t4[0] == None: 
 		print('Error: failed to evaluate turn_on_t4 marker in range %s' % repr(par['tAOI_turn_on_bounds']))
+		err['turn_on_t4'] = np.nan
+		err['turn_on_t4_slope'] = np.nan	
 	else:
 		res['turn_on_t4'] = t_on_t4[0]
 		res['turn_on_t4_slope'] = t_on_t4[1]	
@@ -356,8 +376,13 @@ def extract_timing_markers():
 	# if successful, specify AOIs
 	if 'turn_off_t1' in res and 'turn_off_t4' in res:
 		res['tAOI_1st_losses'] = [res['turn_off_t1'], res['turn_off_t4']] 
+	else:
+		err['tAOI_1st_losses'] = [np.nan, np.nan]
+		
 	if 'turn_on_t1' in res and 'turn_on_t4' in res:		
 		res['tAOI_2nd_losses'] = [res['turn_on_t1'] , res['turn_on_t4']] 
+	else:
+		err['tAOI_2nd_losses'] = [np.nan, np.nan]
 
 	
 def calculate_double_pulse_test_quantities():
@@ -375,6 +400,8 @@ def calculate_double_pulse_test_quantities():
 			func = multiply,
 			generate_time_coords = True )
 		res['E_turnoff_J'] = np.trapz(turnoff_prod[1], turnoff_prod[0]) 
+	else:
+		err['E_turnoff_J'] = np.nan
 
 	if ('tAOI_2nd_losses' in res):
 		# turn-on energy 
@@ -384,6 +411,8 @@ def calculate_double_pulse_test_quantities():
 			func = multiply,
 			generate_time_coords = True )
 		res['E_turnon_J'] = np.trapz(turnon_prod[1], turnon_prod[0])
+	else:
+		err['E_turnon_J'] = np.nan
 
 	
 def visualize_output():
@@ -397,32 +426,16 @@ def visualize_output():
 	for key in res.keys():
 		print("\t%s = %s" % (key, repr(res[key])))
 		
+	if len(err) > 0:
+		print("failed to evaluate:")
+		for key in err.keys():
+			print("\t%s = %s" % (key, repr(err[key])))
+		
 	par['insertion_before_plot'] = ''
-	par['insertion_after_plot'] = ''
+	par['insertion_after_plot']  = ''
 	
-	# FIXME: find a way to add values conditionally (e.g. by introducing an err dict with NaN for automatic replacements that don't break the gnuplot code. Gnuplot should accept 1/0 as NaN)
-	if ('tAOI_1st_losses' in res):
-		par['insertion_before_plot'] += 'set x2tics add ("A" %g*1E+6)\n' % res['turn_off_t1']
-		par['insertion_before_plot'] += 'set x2tics add ("B" %g*1E+6)\n' % res['turn_off_t2']
-		par['insertion_before_plot'] += 'set x2tics add ("C" %g*1E+6)\n' % res['turn_off_t3']
-		par['insertion_before_plot'] += 'set x2tics add ("D" %g*1E+6)\n' % res['turn_off_t4']
-		par['insertion_before_plot'] += '''
-set label 1 "90% V_G_E" at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front rotate by 45
-set label 2 "90% I_p_k" at {turn_off_t2}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
-set label 3 "10% I_p_k" at {turn_off_t3}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
-set label 4 "2% I_p_k" at {turn_off_t4}*1E+6, 0.02*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
-'''
-	if ('tAOI_2nd_losses' in res):                        
-		par['insertion_before_plot'] += 'set x2tics add ("E" %g*1E+6)\n' % res['turn_on_t1']
-		par['insertion_before_plot'] += 'set x2tics add ("F" %g*1E+6)\n' % res['turn_on_t2']
-		par['insertion_before_plot'] += 'set x2tics add ("G" %g*1E+6)\n' % res['turn_on_t3']
-		par['insertion_before_plot'] += 'set x2tics add ("H" %g*1E+6)\n' % res['turn_on_t4']
-		par['insertion_before_plot'] += '''
-set label 5 "10% V_G_E" at {turn_on_t1}*1E+6, 0.1*{V_GE_high} point pt 1 ps 2 front rotate by 45
-set label 6 "10% I_p_k" at {turn_on_t2}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
-set label 7 "90% I_p_k" at {turn_on_t3}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
-set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*{V_DC} point pt 1 ps 2 front rotate by 45		
-'''
+	if len(err) > 0:
+		par['insertion_before_plot'] += 'set label 10000 "{/:Bold FAILED: %s}" font "Verdana,16" tc rgb "red" at graph 0.05, graph 0.9 front\n' % (", ".join(err.keys()).replace('_', '\\\_'))
 	
 	# generate gnuplot script for visualization and validation
 	f = open(plotfile_template, 'r', encoding='cp1252')
@@ -434,7 +447,9 @@ set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*{V_DC} point pt 1 ps 2 front r
 		for key in par.keys():
 			line = line.replace('{%s}'%key, str(par[key]))
 		for key in res.keys():
-			line = line.replace('{%s}'%key, str(res[key]))			
+			line = line.replace('{%s}'%key, str(res[key]))
+		for key in err.keys():
+			line = line.replace('{%s}'%key, str(err[key]))
 		f.write(line)
 	f.close()
 	
@@ -448,27 +463,31 @@ def clean_up():
 	global CH, hdr, par, res
 	for c in CH:
 		del c
-	CH = []
+	CH  = []
 	hdr = {} 
 	par = {} 
 	res = {}
+	err = {}
 	
 	
 def process_file(filename):
+	global res
 	
 	print("processing:\n\t'%s'" % filename)
 	assign_basic_analysis_parameters()
-	read_file_header_and_data(filename)
-	assign_advanced_analysis_parameters()
-	create_corrected_VCE_channel()
 	
-	print("analysis:")
-	extract_voltage_and_current_values()
-	extract_timing_markers()
-	calculate_double_pulse_test_quantities()
-	
-	visualize_output()
-	store_results()
+	if read_file_header_and_data(filename):
+		assign_advanced_analysis_parameters()
+		create_corrected_VCE_channel()
+		
+		print("analysis:")
+		extract_voltage_and_current_values()
+		extract_timing_markers()
+		calculate_double_pulse_test_quantities()
+		res['success'] = int(len(err) == 0) # 1 on success, 0 when errors occured.
+		visualize_output()
+		store_results()
+		
 	print("")
 	clean_up()
 

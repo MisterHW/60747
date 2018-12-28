@@ -1,5 +1,6 @@
 reset
 set term wxt enhanced persist
+nan = NaN
 fn = '{file_base}'
 
 ###
@@ -47,7 +48,7 @@ set x2tics font 'Verdana Bold, 12' offset 0, -0.25
 set format x2 ""
 set grid ytics x2tics
 
-decimation = 1
+decimation = 10
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6
 set xrange [-t_offset_us:t_offset_us]
 set x2range [-t_offset_us:t_offset_us]
@@ -55,6 +56,24 @@ set x2range [-t_offset_us:t_offset_us]
 set style rect fc lt -1 fs transparent solid 0.1 noborder
 set obj rect from {tAOI_turn_off_bounds_start}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
 set obj rect from {tAOI_turn_on_bounds_start}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
+
+set x2tics add ("A" {turn_off_t1}*1E+6)
+set x2tics add ("B" {turn_off_t2}*1E+6) 
+set x2tics add ("C" {turn_off_t3}*1E+6) 
+set x2tics add ("D" {turn_off_t4}*1E+6)
+set label 1 "90% V_G_E" at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front rotate by 45
+set label 2 "90% I_p_k" at {turn_off_t2}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 3 "10% I_p_k" at {turn_off_t3}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 4 "2% I_p_k" at {turn_off_t4}*1E+6, 0.02*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+
+set x2tics add ("E" {turn_on_t1}*1E+6)
+set x2tics add ("F" {turn_on_t2}*1E+6)
+set x2tics add ("G" {turn_on_t3}*1E+6)
+set x2tics add ("H" {turn_on_t4}*1E+6)
+set label 5 "10% V_G_E" at {turn_on_t1}*1E+6, 0.1*{V_GE_high} point pt 1 ps 2 front rotate by 45
+set label 6 "10% I_p_k" at {turn_on_t2}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 7 "90% I_p_k" at {turn_on_t3}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45
+set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*{V_DC} point pt 1 ps 2 front rotate by 45		
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'

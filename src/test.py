@@ -2,6 +2,15 @@
 
 import evaluate_waveform
 
-filen = '../HP2-1-SW2-LS-85degC/18-10-26 18-40-53 HP2-1-SW2-LS 350 155 .txt'
+
+
+# 10 V
+# filen = '../HP2-02-SW6-2R/18-12-17 15-32-40  350 605 .txt'
+
+# 15 V
+# filen = '../HP2-02-SW6-2R/18-12-17 16-33-25  300 605 .txt'
+
+# 18 V
+filen = '../HP2-02-SW6-2R/18-12-17 17-37-18  350 605 .txt'
 
 evaluate_waveform.process_file(filen)
