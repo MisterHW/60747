@@ -37,6 +37,7 @@ def process_files(start_dir, recursive):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
 			evaluate_waveform.process_file(f)
+			evaluate_waveform.clean_up()
 		if os.path.isdir(f) and recursive:
 			process_files(f, recursive)
 	

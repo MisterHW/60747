@@ -414,6 +414,16 @@ def calculate_double_pulse_test_quantities():
 	else:
 		err['E_turnon_J'] = np.nan
 
+		
+def resolve_placeholders(s):
+	for key in par.keys():
+		s = s.replace('{%s}'%key, str(par[key]))
+	for key in res.keys():
+		s = s.replace('{%s}'%key, str(res[key]))
+	for key in err.keys():
+		s = s.replace('{%s}'%key, str(err[key]))	
+	return s
+		
 	
 def visualize_output():
 	### generate output and gnuplot file for documentation
@@ -443,14 +453,8 @@ def visualize_output():
 	f.close()
 	plt_output_filename = par['file_root'] + '.plt'
 	f = open(plt_output_filename, 'w+')
-	for line in plt: # replace all placeholders in the template file (same names as the dictionary keys)
-		for key in par.keys():
-			line = line.replace('{%s}'%key, str(par[key]))
-		for key in res.keys():
-			line = line.replace('{%s}'%key, str(res[key]))
-		for key in err.keys():
-			line = line.replace('{%s}'%key, str(err[key]))
-		f.write(line)
+	for line in plt: # replace all placeholders in the template file (same names as the dictionary keys) 
+		f.write(resolve_placeholders(line))
 	f.close()
 	
 
@@ -484,12 +488,12 @@ def process_file(filename):
 		extract_voltage_and_current_values()
 		extract_timing_markers()
 		calculate_double_pulse_test_quantities()
-		res['success'] = int(len(err) == 0) # 1 on success, 0 when errors occured.
+		res['success'] = int(len(err) == 0) # 1: success, 0: errors occured.
 		visualize_output()
 		store_results()
 		
 	print("")
-	clean_up()
+	# clean_up()
 
 
 	
