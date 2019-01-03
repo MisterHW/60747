@@ -50,7 +50,6 @@ def assign_basic_analysis_parameters():
 	### basic file information
 	par['file_ext'] = '.txt'
 	par['ndatacols'] = 4
-	par['header_rows'] = 19
 	par['skipped_header_rows'] = 7
 	par['R_shunt'] = 0.00984
 
@@ -474,11 +473,12 @@ def clean_up():
 	err = {}
 	
 	
-def process_file(filename):
-	global res
+def process_file(filename, headerlines):
+	global par, res
 	
 	print("processing:\n\t'%s'" % filename)
 	assign_basic_analysis_parameters()
+	par['header_rows'] = headerlines
 	
 	if read_file_header_and_data(filename):
 		assign_advanced_analysis_parameters()
