@@ -50,7 +50,7 @@ def assign_basic_analysis_parameters():
 	### basic file information
 	par['file_ext'] = '.txt'
 	par['ndatacols'] = 4
-	par['skipped_header_rows'] = 7
+	par['skipped_header_rows'] = 4
 	par['R_shunt'] = 0.00984
 
 	
