@@ -92,8 +92,8 @@ def assign_advanced_analysis_parameters():
 		par['t_1st_fall_nom'] - max(min(10E-6, 0.8*par['t_1st_duration']), 0.5E-6),
 		par['t_1st_fall_nom'] - 0] # AOI for first pulse current rise (fit near end)
 	par['tAOI_I_2nd_fit'] = [
-		par['t_2nd_rise_nom'] + 1.5E-6,
-		par['t_2nd_rise_nom'] + max(min(10E-6, 0.8*par['t_2nd_duration']), 2.5E-6)] # AOI for second pulse current rise (fit near beginning)
+		par['t_2nd_rise_nom'] + 4E-6,
+		par['t_2nd_rise_nom'] + max(min(15E-6, 0.8*par['t_2nd_duration']), 5E-6)] # AOI for second pulse current rise (fit near beginning)
 
 ##################################################
 	

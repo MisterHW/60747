@@ -48,7 +48,7 @@ set x2tics font 'Verdana Bold, 12' offset 0, -0.25
 set format x2 ""
 set grid ytics x2tics
 
-decimation = 10
+decimation = 2
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6
 set xrange [-t_offset_us:t_offset_us]
 set x2range [-t_offset_us:t_offset_us]
@@ -57,6 +57,7 @@ set style rect fc lt -1 fs transparent solid 0.1 noborder
 set obj rect from {tAOI_turn_off_bounds_start}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
 set obj rect from {tAOI_turn_on_bounds_start}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
 
+set x2tics add ("" -1E+6) # catch element for tics at NaN (workaround for "add_tic_user: list sort error")
 set x2tics add ("A" {turn_off_t1}*1E+6)
 set x2tics add ("B" {turn_off_t2}*1E+6) 
 set x2tics add ("C" {turn_off_t3}*1E+6) 
