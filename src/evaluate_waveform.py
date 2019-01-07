@@ -306,7 +306,7 @@ def extract_timing_markers():
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.02 * res['Ipk_turnoff'],
 		edge  = 'falling',
-		t_edge= 6E-9 )	
+		t_edge= 6E-9 )
 	if t_off_t4[0] == None: 
 		print('Error: failed to evaluate turn_off_t4 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 		err['turn_off_t4'] = np.nan
@@ -390,7 +390,6 @@ def calculate_double_pulse_test_quantities():
 	print("\tswitching energies")
 	
 	multiply = lambda vals : vals[0] * vals[1]
-	
 	if ('tAOI_1st_losses' in res):
 		# turn-off energy
 		turnoff_prod = wfa.arithmetic_operation(
@@ -444,7 +443,7 @@ def visualize_output():
 	par['insertion_after_plot']  = ''
 	
 	if len(err) > 0:
-		par['insertion_before_plot'] += 'set label 10000 "{/:Bold FAILED: %s}" font "Verdana,16" tc rgb "red" at graph 0.05, graph 0.9 front\n' % (", ".join(err.keys()).replace('_', '\\\_'))
+		par['insertion_before_plot'] += 'set label 10000 "{/:Bold FAILED: %s}" font "Verdana,16" tc rgb "red" at graph 0.5, graph 0.5 center front\n' % (", ".join(err.keys()).replace('_', '\\\_'))
 	
 	# generate gnuplot script for visualization and validation
 	f = open(plotfile_template, 'r', encoding='cp1252')

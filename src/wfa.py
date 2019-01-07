@@ -141,7 +141,7 @@ class WaveformAnalyzer:
 			# error: no transition found
 			return [None, 0]
 		
-		t, dydt = None, 0
+		t, dydt = self.smp_to_time([sAOI[0] + prelim_trig_x])[0], 0
 		if tau_samples > 2:
 			tAOI_fit = self.smp_to_time([
 				sAOI[0] + prelim_trig_x - tau_samples, 
@@ -151,23 +151,33 @@ class WaveformAnalyzer:
 			if fitres[2] == False:
 				# error: fit failed
 				return [None, 0]
+			if abs(fitres[1]) < 1E-6:
+				print('Warning: in find_level_crossing(): horizontal fit detected - refinement may be unstable.')
 			# find intersection of fit line with trigger level 
 			# by solving for t: level == fitres[0] + fitres[1] * t
-			t = (level - fitres[0])/fitres[1]
-			dydt = fitres[1]
-		else:
-			t = self.smp_to_time([sAOI[0] + prelim_trig_x])[0]
-			dydt = 0
+			t_refined = (level - fitres[0])/fitres[1]
+			dydt_refined = fitres[1]
 			
+			if abs(t_refined - t) < 5 * t_edge:
+				# print('find_level_crossing: adjusting position by %g' % (t_refined - t))
+				t = t_refined
+				dydt = dydt_refined
+			else:	
+				print('Warning: in find_level_crossing(): refined value %g out of bounds: %g +/- %g. Defaulting to previous (integer) sample position.' % (t_refined, t, 5*t_edge))
+
+				
+			
+		# print('find_level_crossing result:', [t, dydt]) # DEBUG 
 		return [t, dydt]
 		
 
-	def resampled_region(self, tAOI, nsmp):	
+	def resampled_region(self, tAOI, nsmp):
 		t_x  = np.linspace(start = tAOI[0], stop = tAOI[1] , num = nsmp, endpoint = False)
-		s_x  = self.time_to_smp(t_x) 
+		s_x  = self.time_to_smp(t_x, force_inrange=True) 
 		# list index out of range handling: repeat nearest neighbour			
-		if s_x[-1] + 1 > len(self.s) - 1:
+		if s_x[-1] + 1 > len(self.s) - 2:
 			s_x[-1] = s_x[-2] 
+		# print(repr([s_x[0], s_x[1], s_x[-2], s_x[-1] ])) # DEBUG
 		# create linear interpolated 1D data 
 		r_re = [ 
 			self.s[int(s_x[i])    ]*(1 - (s_x[i] - int(s_x[i]))) + 
