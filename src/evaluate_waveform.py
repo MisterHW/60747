@@ -22,6 +22,7 @@ import wfa
 
 # all header keywords
 keys = [
+'Modul', 'Schalter', 'RG',
 'Durchlauf Nr.', 'V HMP 2', 'I HMP 2', 'V HMP 3', 'I HMP 3', 'V ps 1', 'I ps 1', 'Temp.', 
 'delay [mS]', 'pre-charge [mS]', 'pause [mS]', 'puls [mS]', 'periode [mS]', 
 'dt Cha.1 [Sek]', 'dt Cha.2 [Sek]', 'dt Cha.3 [Sek]', 'dt Cha.4 [Sek]', 
@@ -33,7 +34,12 @@ timebase_keys = [
 ]
 
 # output table format
-output_table_line_template = '{success}'
+output_table_line_template = \
+	'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
+	'{V_CE_turnoff};{V_DC};{Ipk_turnoff};{Temp.};{RG};{V_GE_high};{V_GE_low};' + \
+	'{turn_off_t1};{turn_off_t2};{turn_off_t3};{turn_off_t4};{turn_on_t1};{turn_on_t2};{turn_on_t3};{turn_on_t4};' + \
+	'{E_turnoff_J};{E_turnon_J};{turn_off_t3};{turn_off_t4};' + \
+	'{I_droop_during_pause};'
 
 
 CH = []
@@ -79,10 +85,10 @@ def assign_advanced_analysis_parameters():
 	par['t_2nd_fall_nom'] = par['t_2nd_duration']
 	# switching event regions
 	par['tAOI_turn_off_bounds'] = [par['t_1st_fall_nom'] - 0, par['t_1st_fall_nom'] + par['t_inter_pulse_duration'] * 0.9]
-	par['tAOI_turn_off_bounds_start'] = par['tAOI_turn_off_bounds'][0]
+	par['tAOI_turn_off_bounds_begin'] = par['tAOI_turn_off_bounds'][0]
 	par['tAOI_turn_off_bounds_end']   = par['tAOI_turn_off_bounds'][1]
 	par['tAOI_turn_on_bounds']  = [par['t_2nd_rise_nom'] - 0.5E-6, par['t_2nd_rise_nom'] + par['t_2nd_duration'] * 0.9]
-	par['tAOI_turn_on_bounds_start'] = par['tAOI_turn_on_bounds'][0]
+	par['tAOI_turn_on_bounds_begin'] = par['tAOI_turn_on_bounds'][0]
 	par['tAOI_turn_on_bounds_end']   = par['tAOI_turn_on_bounds'][1]
 	# analysis areas of interest (unit: seconds)
 	par['tAOI_V_GE_low']  = [par['t_2nd_rise_nom']-22E-6, par['t_2nd_rise_nom']- 2E-6] # AOI for off-state gate voltage estimation
@@ -90,7 +96,7 @@ def assign_advanced_analysis_parameters():
 	par['tAOI_V_DC'] = [par['t_1st_fall_nom'] + 5E-6, par['t_2nd_rise_nom'] - 2E-6] # AOI for DC link voltage estimation after first pulse
 	par['tAOI_V_CE'] = [par['t_1st_fall_nom'] - 2E-6, par['t_1st_fall_nom'] - 0E-6] # AOI for CE saturation voltage estimation close to peak current (not compensated for drop across shunt)
 	par['tAOI_Ipk_1st_fall'] = [par['t_1st_fall_nom']-0.5E-6,par['t_1st_fall_nom']+5E-6] # AOI for peak turn-off current detection
-	par['tAOI_Ipk_2nd_rise'] = [par['t_2nd_rise_nom']+0,par['t_2nd_rise_nom']+2E-6] # AOI for peak turn-on current detection
+	par['tAOI_Ipk_2nd_rise'] = [par['t_2nd_rise_nom']+0,par['t_2nd_rise_nom']+4E-6] # AOI for peak turn-on current detection
 	par['tAOI_I_1st_fit'] = [
 		par['t_1st_fall_nom'] - max(min(10E-6, 0.8*par['t_1st_duration']), 0.5E-6),
 		par['t_1st_fall_nom'] - 0] # AOI for first pulse current rise (fit near end)
@@ -154,8 +160,8 @@ def read_file_header_and_data(filename):
 	print("reading header:")
 	hdr = extract_header_information(filename, par['header_rows'], par['skipped_header_rows'])
 	
-	for key in hdr.keys():
-		print("\t%s : %s" % (key, hdr[key]))
+	for key in sorted(hdr.keys()):
+		print("\t%s = %s" % (key, hdr[key]))
 	
 	### read Cheleiha V2 saved waveform file as ndarray, rejecting header rows.
 	print("reading data:")
@@ -255,7 +261,7 @@ def extract_voltage_and_current_values():
 	#res['V_CE_turnoff'] = np.average(V_CE_corrected[1])
 		
 	# new implementation employing CH_VCE_corr
-	res['V_CE_turnoff'] = CH[par['CH_VCE_corr']].average(par['tAOI_V_CE'])
+	res['V_CE_turnoff'] = CH[par['CH_VCE_corr']].average(par['tAOI_V_CE'])[0]
 		
 def extract_timing_markers():
 	global CH, par, res, err
@@ -417,6 +423,8 @@ def calculate_double_pulse_test_quantities():
 
 		
 def resolve_placeholders(s):
+	for key in hdr.keys():
+		s = s.replace('{%s}'%key, str(hdr[key]))
 	for key in par.keys():
 		s = s.replace('{%s}'%key, str(par[key]))
 	for key in res.keys():
@@ -430,16 +438,16 @@ def visualize_output():
 	### generate output and gnuplot file for documentation
 
 	print("parameters:")
-	for key in par.keys():
+	for key in sorted(par.keys()):
 		print("\t%s = %s" % (key, repr(par[key])))	
 		
 	print("results:")
-	for key in res.keys():
+	for key in sorted(res.keys()):
 		print("\t%s = %s" % (key, repr(res[key])))
 		
 	if len(err) > 0:
 		print("failed to evaluate:")
-		for key in err.keys():
+		for key in sorted(err.keys()):
 			print("\t%s = %s" % (key, repr(err[key])))
 		
 	par['insertion_before_plot'] = ''
@@ -462,7 +470,7 @@ def visualize_output():
 
 
 def store_header(fn):
-	line = output_table_line_template.replace('{','"').replace('}','"') + '\n'
+	line = output_table_line_template.replace('"{','"').replace('}"','"').replace('{','"').replace('}','"') + '\n'
 	if fn == None:
 		print(line)
 	else:

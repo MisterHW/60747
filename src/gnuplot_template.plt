@@ -54,8 +54,8 @@ set xrange [-t_offset_us:t_offset_us]
 set x2range [-t_offset_us:t_offset_us]
 
 set style rect fc lt -1 fs transparent solid 0.1 noborder
-set obj rect from {tAOI_turn_off_bounds_start}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
-set obj rect from {tAOI_turn_on_bounds_start}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
+set obj rect from {tAOI_turn_off_bounds_begin}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
+set obj rect from {tAOI_turn_on_bounds_begin}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
 
 set x2tics add ("" -1E+6) # catch element for tics at NaN (workaround for "add_tic_user: list sort error")
 set x2tics add ("A" {turn_off_t1}*1E+6)
