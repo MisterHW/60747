@@ -7,13 +7,9 @@ import evaluate_waveform
 args = None
 
 def extant_file(x):
-    """
-    'Type' for argparse - checks that file exists but does not open.
-	https://stackoverflow.com/questions/11540854/file-as-command-line-argument-for-argparse-error-message-if-argument-is-not-va
-    """
+	# https://stackoverflow.com/questions/11540854/file-as-command-line-argument-for-argparse-error-message-if-argument-is-not-va
     if not os.path.exists(x):
-        # Argparse uses the ArgumentTypeError to give a rejection message like:
-        # error: argument input: x does not exist
+        # Argparse uses the ArgumentTypeError to give a rejection message
         raise argparse.ArgumentTypeError("{0} does not exist".format(x))
     return x
 	
@@ -32,13 +28,25 @@ def init_argparse():
 	parser.add_argument("-o", "--output", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
 	parser.add_argument("-l", "--headerlines", type=int, help='number of header lines to be processed separately (and skipped to jump to the data).', required=True)
 	args = parser.parse_args()
-
+	
 	
 def process_files(start_dir, recursive):
-	for f in os.listdir(start_dir):
+	# prepare output file: create absolute path, initialize file with header row.
+	# Joining in path.join() continues from from the last absolute path argument,
+	# so if args.output is relative, it gets resolved w.r.t. args.directory .
+	outp = os.path.join(os.path.abspath(args.directory), args.output)
+	if os.path.exists(outp):
+		os.remove(outp) 
+		print('deleted %s' % outp)
+	evaluate_waveform.store_header(outp)
+	
+	# iterate over all suitable files in directory. 
+	# Recursively process subdirectories if required.
+	for f in sorted(os.listdir(start_dir)):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
-			evaluate_waveform.process_file(f, args.headerlines)
+			if evaluate_waveform.process_file(f, args.headerlines):
+				evaluate_waveform.store_results(outp)
 			evaluate_waveform.clean_up()
 		if os.path.isdir(f) and recursive:
 			process_files(f, recursive)

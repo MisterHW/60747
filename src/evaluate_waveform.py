@@ -32,6 +32,9 @@ timebase_keys = [
 'dt Cha.1 [Sek]', 'dt Cha.2 [Sek]', 'dt Cha.3 [Sek]', 'dt Cha.4 [Sek]'
 ]
 
+# output table format
+output_table_line_template = '{success}'
+
 
 CH = []
 same_path_as_script = lambda filename: os.path.join(os.path.dirname(__file__), filename)
@@ -456,8 +459,27 @@ def visualize_output():
 	f.close()
 	
 
-def store_results():
-	# generate output to file
+
+
+def store_header(fn):
+	line = output_table_line_template.replace('{','"').replace('}','"') + '\n'
+	if fn == None:
+		print(line)
+	else:
+		f = open(fn, 'w')
+		f.write(line)
+		f.close()
+	return
+
+
+def store_results(fn):
+	line = resolve_placeholders(output_table_line_template) + '\n'
+	if fn == None:
+		print(line)
+	else:
+		f = open(fn, 'a')
+		f.write(line)
+		f.close()
 	return
 	
 	
@@ -479,6 +501,7 @@ def process_file(filename, headerlines):
 	assign_basic_analysis_parameters()
 	par['header_rows'] = headerlines
 	
+	process_file_successful = False
 	if read_file_header_and_data(filename):
 		assign_advanced_analysis_parameters()
 		create_corrected_VCE_channel()
@@ -489,11 +512,10 @@ def process_file(filename, headerlines):
 		calculate_double_pulse_test_quantities()
 		res['success'] = int(len(err) == 0) # 1: success, 0: errors occured.
 		visualize_output()
-		store_results()
+		process_file_successful = True 
 		
 	print("")
-	# clean_up()
-
+	return process_file_successful
 
 	
 	
