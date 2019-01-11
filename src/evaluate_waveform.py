@@ -14,7 +14,7 @@ import os.path
 import sys 
 import numpy as np
 import wfa
-
+import re
 
 ##################################################
 #	Analysis Configuration
@@ -76,13 +76,17 @@ def assign_advanced_analysis_parameters():
 	par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
 	par['TS_IE']  = float(hdr['dt Cha.4 [Sek]'])
 	# nominal gate driver timing
-	par['t_1st_duration'] =  float(hdr['pre-charge [mS]'])*1E-3
-	par['t_inter_pulse_duration']   = float(hdr['pause [mS]'])*1E-3
-	par['t_2nd_duration'] =  float(hdr['puls [mS]' ])*1E-3
-	par['t_1st_rise_nom'] = -par['t_inter_pulse_duration'] -par['t_1st_duration'] 
-	par['t_1st_fall_nom'] = -par['t_inter_pulse_duration']
-	par['t_2nd_rise_nom'] = 0 # coincident with trigger (not accounting for propagation delay in the LWL and gate driver circuitry)
-	par['t_2nd_fall_nom'] = par['t_2nd_duration']
+	par['t_1st_duration'] =  float(hdr['pre-charge [mS]']) * 1E-3
+	par['t_inter_pulse_duration']   = float(hdr['pause [mS]']) * 1E-3
+	par['t_2nd_duration'] =  float(hdr['puls [mS]' ]) * 1E-3
+	assert par['t_1st_duration'] > 0, "\nduration needs to be positive, typically > 0.5E-6"
+	assert par['t_inter_pulse_duration'] > 0, "\nduration needs to be positive, typically > 50E-6"
+	assert par['t_2nd_duration'] > 0, "\nduration needs to be positive, typically > 5E-6"
+	t_trigger = 0
+	par['t_1st_rise_nom'] = t_trigger - par['t_inter_pulse_duration'] - par['t_1st_duration'] 
+	par['t_1st_fall_nom'] = t_trigger - par['t_inter_pulse_duration']
+	par['t_2nd_rise_nom'] = t_trigger # coincident with trigger (not accounting for propagation delay in the LWL and gate driver circuitry)
+	par['t_2nd_fall_nom'] = t_trigger + par['t_2nd_duration']
 	# switching event regions
 	par['tAOI_turn_off_bounds'] = [par['t_1st_fall_nom'] - 0, par['t_1st_fall_nom'] + par['t_inter_pulse_duration'] * 0.9]
 	par['tAOI_turn_off_bounds_begin'] = par['tAOI_turn_off_bounds'][0]
@@ -91,18 +95,26 @@ def assign_advanced_analysis_parameters():
 	par['tAOI_turn_on_bounds_begin'] = par['tAOI_turn_on_bounds'][0]
 	par['tAOI_turn_on_bounds_end']   = par['tAOI_turn_on_bounds'][1]
 	# analysis areas of interest (unit: seconds)
+	assert par['t_1st_fall_nom'] < par['t_2nd_rise_nom']-22E-6, "\ntAOI_V_GE_low to be sampled within pause phase, equivalent to par['t_inter_pulse_duration'] > 22E-6"
 	par['tAOI_V_GE_low']  = [par['t_2nd_rise_nom']-22E-6, par['t_2nd_rise_nom']- 2E-6] # AOI for off-state gate voltage estimation
-	par['tAOI_V_GE_high'] = [par['t_1st_fall_nom']- 2E-6, par['t_1st_fall_nom']- 0.5E-6] # AOI for on-state gate voltage estimation
+	assert par['t_1st_rise_nom'] < par['t_1st_fall_nom']- 1.5E-6, "\ntAOI_V_GE_high to be sampled towards the end of the first pulse, equivalent to t_1st_duration > 1E-6 (pulse too short)"
+	par['tAOI_V_GE_high'] = [par['t_1st_fall_nom']- 1E-6, par['t_1st_fall_nom']- 0] # AOI for on-state gate voltage estimation
 	par['tAOI_V_DC'] = [par['t_1st_fall_nom'] + 5E-6, par['t_2nd_rise_nom'] - 2E-6] # AOI for DC link voltage estimation after first pulse
+	assert par['tAOI_V_DC'][1] > par['tAOI_V_DC'][0], "invalid tAOI_V_DC interval. t_inter_pulse_duration too small or error in t_1st_fall_nom or t_2nd_rise_nom definitions."
 	par['tAOI_V_CE'] = [par['t_1st_fall_nom'] - 2E-6, par['t_1st_fall_nom'] - 0E-6] # AOI for CE saturation voltage estimation close to peak current (not compensated for drop across shunt)
-	par['tAOI_Ipk_1st_fall'] = [par['t_1st_fall_nom']-0.5E-6,par['t_1st_fall_nom']+5E-6] # AOI for peak turn-off current detection
-	par['tAOI_Ipk_2nd_rise'] = [par['t_2nd_rise_nom']+0,par['t_2nd_rise_nom']+4E-6] # AOI for peak turn-on current detection
+	assert  par['t_1st_fall_nom'] + 5E-6 < par['t_2nd_rise_nom'], "tAOI_Ipk_1st_fall overlaps second pulse / t_inter_pulse_duration < 5E-6."
+	par['tAOI_Ipk_1st_fall'] = [par['t_1st_fall_nom'] - 0.5E-6, par['t_1st_fall_nom'] + 5E-6] # AOI for peak turn-off current detection
+	assert par['t_2nd_rise_nom'] + 4E-6 < par['t_2nd_fall_nom'], "tAOI_Ipk_2nd_rise outside of second pulse / t_2nd_duration < 4E-6."
+	par['tAOI_Ipk_2nd_rise'] = [par['t_2nd_rise_nom'] + 0, par['t_2nd_rise_nom'] + 4E-6] # AOI for peak turn-on current detection
+	assert par['t_1st_duration'] > 0.5E-6, "tAOI_I_1st_fit requires tAOI_I_1st_fit > 0.5E-6"
 	par['tAOI_I_1st_fit'] = [
-		par['t_1st_fall_nom'] - max(min(10E-6, 0.8*par['t_1st_duration']), 0.5E-6),
+		par['t_1st_fall_nom'] - max(min(10E-6, 0.8 * par['t_1st_duration']), 0.5E-6),
 		par['t_1st_fall_nom'] - 0] # AOI for first pulse current rise (fit near end)
+	assert par['t_2nd_rise_nom'] + 5E-6 < par['t_2nd_fall_nom'], "tAOI_I_2nd_fit exceeds beyond second pulse, t_2nd_duration > 5E-6 expected."
 	par['tAOI_I_2nd_fit'] = [
 		par['t_2nd_rise_nom'] + 4E-6,
-		par['t_2nd_rise_nom'] + max(min(15E-6, 0.8*par['t_2nd_duration']), 5E-6)] # AOI for second pulse current rise (fit near beginning)
+		par['t_2nd_rise_nom'] + max(min(15E-6, 0.8 * par['t_2nd_duration']), 5E-6)] # AOI for second pulse current rise (fit near beginning)
+	
 
 ##################################################
 	
@@ -263,7 +275,8 @@ def extract_voltage_and_current_values():
 	# new implementation employing CH_VCE_corr
 	res['V_CE_turnoff'] = CH[par['CH_VCE_corr']].average(par['tAOI_V_CE'])[0]
 		
-def extract_timing_markers():
+		
+def extract_turnoff_timing_markers():
 	global CH, par, res, err
 	
 	### extract waveform timing according to IEC60747-9 definitions
@@ -273,7 +286,7 @@ def extract_timing_markers():
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.9 * res['V_GE_high'],
 		edge  = 'falling',
-		t_edge= 0 )	
+		t_edge= 20E-9 )	
 	if t_off_t1[0] == None: 
 		print('Error: failed to evaluate turn_off_t1 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 		err['turn_off_t1'] = np.nan
@@ -287,7 +300,7 @@ def extract_timing_markers():
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.9 * res['Ipk_turnoff'],
 		edge  = 'falling',
-		t_edge= 6E-9 )	
+		t_edge= 10E-9 )	
 	if t_off_t2[0] == None: 
 		print('Error: failed to evaluate turn_off_t2 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 		err['turn_off_t2'] = np.nan
@@ -301,7 +314,7 @@ def extract_timing_markers():
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.1 * res['Ipk_turnoff'],
 		edge  = 'falling',
-		t_edge= 6E-9 )	
+		t_edge= 20E-9 )	
 	if t_off_t3[0] == None: 
 		print('Error: failed to evaluate turn_off_t3 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 		err['turn_off_t3'] = np.nan
@@ -315,15 +328,25 @@ def extract_timing_markers():
 		tAOI  = par['tAOI_turn_off_bounds'],
 		level = 0.02 * res['Ipk_turnoff'],
 		edge  = 'falling',
-		t_edge= 6E-9 )
+		t_edge= 200E-9 )
 	if t_off_t4[0] == None: 
 		print('Error: failed to evaluate turn_off_t4 marker in range %s' % repr(par['tAOI_turn_off_bounds']))
 		err['turn_off_t4'] = np.nan
 		err['turn_off_t4_slope'] = np.nan
 	else:
+
 		res['turn_off_t4'] = t_off_t4[0]
 		res['turn_off_t4_slope'] = t_off_t4[1]
 		
+	# if successful, specify integration interval
+	if 'turn_off_t1' in res and 'turn_off_t4' in res:
+		res['tAOI_1st_losses'] = [res['turn_off_t1'], res['turn_off_t4']] 
+	else:
+		err['tAOI_1st_losses'] = [np.nan, np.nan]
+		
+		
+def extract_turnon_timing_markers():
+	global CH, par, res, err		
 		
 	# turn-on marker 1: V_GE = 0.1 * V_GE_high rising
 	t_on_t1 = CH[par['CH_VGE']].find_level_crossing(
@@ -381,25 +404,21 @@ def extract_timing_markers():
 		res['turn_on_t4'] = t_on_t4[0]
 		res['turn_on_t4_slope'] = t_on_t4[1]	
 	
-	# if successful, specify AOIs
-	if 'turn_off_t1' in res and 'turn_off_t4' in res:
-		res['tAOI_1st_losses'] = [res['turn_off_t1'], res['turn_off_t4']] 
-	else:
-		err['tAOI_1st_losses'] = [np.nan, np.nan]
-		
+	# if successful, specify integration interval	
 	if 'turn_on_t1' in res and 'turn_on_t4' in res:		
 		res['tAOI_2nd_losses'] = [res['turn_on_t1'] , res['turn_on_t4']] 
 	else:
 		err['tAOI_2nd_losses'] = [np.nan, np.nan]
 
 	
-def calculate_double_pulse_test_quantities():
+def calculate_turnoff_characteristics():
 	### determine switching times, energies according to IEC60747-9 definitions
-		
-	print("\tswitching energies")
+	global res, err	
+	print("\tturn-off switching characteristics")
 	
 	multiply = lambda vals : vals[0] * vals[1]
 	if ('tAOI_1st_losses' in res):
+		assert res['tAOI_1st_losses'][0] < res['tAOI_1st_losses'][1], "tAOI_1st_losses: violation of requirement turn_off_t1 < turn_off_t4."
 		# turn-off energy
 		turnoff_prod = wfa.arithmetic_operation(
 			WFA_list = [CH[par['CH_VCE']], CH[par['CH_IE']]], 
@@ -409,8 +428,15 @@ def calculate_double_pulse_test_quantities():
 		res['E_turnoff_J'] = np.trapz(turnoff_prod[1], turnoff_prod[0]) 
 	else:
 		err['E_turnoff_J'] = np.nan
-
+		
+		
+def calculate_turnon_characteristics():
+	global res, err
+	print("\tturn-on switching characteristics")
+	
+	multiply = lambda vals : vals[0] * vals[1]
 	if ('tAOI_2nd_losses' in res):
+		assert res['tAOI_2nd_losses'][0] < res['tAOI_2nd_losses'][1], "tAOI_2nd_losses: violation of requirement turn_on_t1 < turn_on_t4."
 		# turn-on energy 
 		turnon_prod = wfa.arithmetic_operation(
 			WFA_list = [CH[par['CH_VCE']], CH[par['CH_IE']]], 
@@ -422,7 +448,7 @@ def calculate_double_pulse_test_quantities():
 		err['E_turnon_J'] = np.nan
 
 		
-def resolve_placeholders(s):
+def resolve_placeholders(s, purge_unresolved = False):
 	for key in hdr.keys():
 		s = s.replace('{%s}'%key, str(hdr[key]))
 	for key in par.keys():
@@ -431,12 +457,13 @@ def resolve_placeholders(s):
 		s = s.replace('{%s}'%key, str(res[key]))
 	for key in err.keys():
 		s = s.replace('{%s}'%key, str(err[key]))	
+	if purge_unresolved:
+		placeholder_pattern = r'\{[^\}\/\\]*\}' # match "{text}" pattern except when text contains \ (gnuplot multiline) or / (gnuplot {/:bold ....} )
+		s = re.sub(placeholder_pattern, '(nan)',s)
 	return s
 		
 	
-def visualize_output():
-	### generate output and gnuplot file for documentation
-
+def print_params_and_results():
 	print("parameters:")
 	for key in sorted(par.keys()):
 		print("\t%s = %s" % (key, repr(par[key])))	
@@ -449,6 +476,12 @@ def visualize_output():
 		print("failed to evaluate:")
 		for key in sorted(err.keys()):
 			print("\t%s = %s" % (key, repr(err[key])))
+			
+	
+def visualize_output(purge_unresolved_placeholders = False):
+	### generate output and gnuplot file for documentation
+
+	print_params_and_results()
 		
 	par['insertion_before_plot'] = ''
 	par['insertion_after_plot']  = ''
@@ -463,7 +496,7 @@ def visualize_output():
 	plt_output_filename = par['file_root'] + '.plt'
 	f = open(plt_output_filename, 'w+')
 	for line in plt: # replace all placeholders in the template file (same names as the dictionary keys) 
-		f.write(resolve_placeholders(line))
+		f.write(resolve_placeholders(line, purge_unresolved_placeholders))
 	f.close()
 	
 
@@ -492,7 +525,7 @@ def store_results(fn):
 	
 	
 def clean_up():
-	global CH, hdr, par, res
+	global CH, hdr, par, res, err
 	for c in CH:
 		del c
 	CH  = []
@@ -500,6 +533,13 @@ def clean_up():
 	par = {} 
 	res = {}
 	err = {}
+	
+
+def print_assertion_error(error):
+	print('\n\nAssertionError: ', error)
+#	print('=============================================')
+#	visualize_output(purge_unresolved_placeholders = True)
+#	print('=============================================\n\n')	
 	
 	
 def process_file(filename, headerlines):
@@ -509,21 +549,38 @@ def process_file(filename, headerlines):
 	assign_basic_analysis_parameters()
 	par['header_rows'] = headerlines
 	
-	process_file_successful = False
+	result = False
 	if read_file_header_and_data(filename):
-		assign_advanced_analysis_parameters()
-		create_corrected_VCE_channel()
+		try: 
+			assign_advanced_analysis_parameters()
+			create_corrected_VCE_channel()
+			print("analysis:")
+			extract_voltage_and_current_values()
+		except AssertionError as e:
+			print_assertion_error(e)
+			return result
+
+		result = True
 		
-		print("analysis:")
-		extract_voltage_and_current_values()
-		extract_timing_markers()
-		calculate_double_pulse_test_quantities()
+		try: 
+			extract_turnoff_timing_markers()
+			calculate_turnoff_characteristics()	
+		except AssertionError as e:
+			result = False
+			print_assertion_error(e)
+			
+		try: 				
+			extract_turnon_timing_markers()
+			calculate_turnon_characteristics()	
+		except AssertionError as e:
+			result = False
+			print_assertion_error(e)
+			
 		res['success'] = int(len(err) == 0) # 1: success, 0: errors occured.
-		visualize_output()
-		process_file_successful = True 
+		visualize_output(purge_unresolved_placeholders = True)
 		
 	print("")
-	return process_file_successful
+	return result
 
 	
 	

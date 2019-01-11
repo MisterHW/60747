@@ -83,6 +83,9 @@ class WaveformAnalyzer:
 		
 		
 	def samples_t(self, tAOI, nsmp = 0):
+		if nsmp < 0:
+			raise ValueError("nsmp < 0")
+			return []
 		sAOI = list(map(round, self.time_to_smp(tAOI)))
 		if nsmp == 0:
 			nsmp = sAOI[1] - sAOI[0] + 1
@@ -159,19 +162,21 @@ class WaveformAnalyzer:
 			dydt_refined = fitres[1]
 			
 			if abs(t_refined - t) < 5 * t_edge:
+				# note: since tau_samples > 2, t_edge is already > 0
 				# print('find_level_crossing: adjusting position by %g' % (t_refined - t))
 				t = t_refined
 				dydt = dydt_refined
 			else:	
 				print('Warning: in find_level_crossing(): refined value %g out of bounds: %g +/- %g. Defaulting to previous (integer) sample position.' % (t_refined, t, 5*t_edge))
 
-				
-			
 		# print('find_level_crossing result:', [t, dydt]) # DEBUG 
 		return [t, dydt]
 		
 
 	def resampled_region(self, tAOI, nsmp):
+		if nsmp <= 0:
+			raise ValueError("nsmp = %d < 0" % nsmp)
+			return []
 		t_x  = np.linspace(start = tAOI[0], stop = tAOI[1] , num = nsmp, endpoint = False)
 		s_x  = self.time_to_smp(t_x, force_inrange=True) 
 		# list index out of range handling: repeat nearest neighbour			
@@ -201,3 +206,6 @@ def arithmetic_operation(WFA_list, tAOI, func, generate_time_coords = False):
 	if generate_time_coords:
 		outp_t = WFA_list[idx_max].samples_t(tAOI, n_max)
 	return [outp_t, outp_y]
+	
+	
+	
