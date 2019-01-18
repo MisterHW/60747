@@ -49,7 +49,8 @@ hdr = {} # header data (dict)
 par = {} # analysis parameters (dict)
 res = {} # results (dict)
 err = {} # errors / quantities that failed to evaluate (contains defaults or NaN)
-plotfile_template = same_path_as_script('gnuplot_template.plt')
+plotfile_template_m2 = same_path_as_script('gnuplot_template_m2.plt')
+plotfile_template_m9 = same_path_as_script('gnuplot_template_m9.plt')
 
 
 
@@ -63,7 +64,23 @@ def assign_basic_analysis_parameters():
 	par['R_shunt'] = 0.00984
 
 	
-def assign_advanced_analysis_parameters():
+def assign_advanced_analysis_parameters_m2():
+	print("parameters:")		
+	global hdr, par
+
+	# scope channel mapping
+	par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
+	par['TS_VGE'] = float(hdr['dt Cha.1 [Sek]']) # sampling time step 
+	par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
+	par['TS_VDC'] = float(hdr['dt Cha.2 [Sek]'])
+	par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
+	par['TS_VCE'] = float(hdr['dt Cha.3 [Sek]'])
+	par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
+	par['TS_IE']  = float(hdr['dt Cha.4 [Sek]'])
+	# TODO
+	
+	
+def assign_advanced_analysis_parameters_m9():
 	print("parameters:")		
 	global hdr, par
 	# scope channel mapping
@@ -238,7 +255,14 @@ def create_corrected_VCE_channel():
 	par['CH_VCE_corr'] = len(CH) - 1
 	
 	
-def extract_voltage_and_current_values():
+def extract_voltage_and_current_values_m2():
+	global CH, par, res
+	
+	print("\tvoltage and current levels")
+	# TODO
+	
+	
+def extract_voltage_and_current_values_m9():
 	global CH, par, res
 	
 	print("\tvoltage and current levels")
@@ -276,7 +300,16 @@ def extract_voltage_and_current_values():
 	res['V_CE_turnoff'] = CH[par['CH_VCE_corr']].average(par['tAOI_V_CE'])[0]
 		
 		
-def extract_turnoff_timing_markers():
+def extract_rr_timing_markers_m2():
+	# TODO
+	return
+	
+def calculate_rr_characteristics_m2():
+	# TODO 
+	return 
+		
+		
+def extract_turnoff_timing_markers_m9():
 	global CH, par, res, err
 	
 	### extract waveform timing according to IEC60747-9 definitions
@@ -345,7 +378,7 @@ def extract_turnoff_timing_markers():
 		err['tAOI_1st_losses'] = [np.nan, np.nan]
 		
 		
-def extract_turnon_timing_markers():
+def extract_turnon_timing_markers_m9():
 	global CH, par, res, err		
 		
 	# turn-on marker 1: V_GE = 0.1 * V_GE_high rising
@@ -411,7 +444,7 @@ def extract_turnon_timing_markers():
 		err['tAOI_2nd_losses'] = [np.nan, np.nan]
 
 	
-def calculate_turnoff_characteristics():
+def calculate_turnoff_characteristics_m9():
 	### determine switching times, energies according to IEC60747-9 definitions
 	global res, err	
 	print("\tturn-off switching characteristics")
@@ -430,7 +463,7 @@ def calculate_turnoff_characteristics():
 		err['E_turnoff_J'] = np.nan
 		
 		
-def calculate_turnon_characteristics():
+def calculate_turnon_characteristics_m9():
 	global res, err
 	print("\tturn-on switching characteristics")
 	
@@ -477,8 +510,8 @@ def print_params_and_results():
 		for key in sorted(err.keys()):
 			print("\t%s = %s" % (key, repr(err[key])))
 			
-	
-def visualize_output(purge_unresolved_placeholders = False):
+			
+def __visualize_output(plotfile_template, purge_unresolved_placeholders = False):
 	### generate output and gnuplot file for documentation
 
 	print_params_and_results()
@@ -498,8 +531,15 @@ def visualize_output(purge_unresolved_placeholders = False):
 	for line in plt: # replace all placeholders in the template file (same names as the dictionary keys) 
 		f.write(resolve_placeholders(line, purge_unresolved_placeholders))
 	f.close()
+				
+			
 	
-
+def visualize_output_m2( purge_unresolved_placeholders = False):
+	__visualize_output(plotfile_template_m2, purge_unresolved_placeholders)
+	
+	
+def visualize_output_m9( purge_unresolved_placeholders = False):
+	__visualize_output(plotfile_template_m9, purge_unresolved_placeholders)
 
 
 def store_header(fn):
@@ -542,20 +582,16 @@ def print_assertion_error(error):
 #	print('=============================================\n\n')	
 	
 	
-def process_file(filename, headerlines):
+def process_file_m2(filename, headerlines):	
 	global par, res
-	
-	print("processing:\n\t'%s'" % filename)
-	assign_basic_analysis_parameters()
-	par['header_rows'] = headerlines
-	
 	result = False
+	
 	if read_file_header_and_data(filename):
 		try: 
-			assign_advanced_analysis_parameters()
+			assign_advanced_analysis_parameters_m2()
 			create_corrected_VCE_channel()
 			print("analysis:")
-			extract_voltage_and_current_values()
+			extract_voltage_and_current_values_m2()
 		except AssertionError as e:
 			print_assertion_error(e)
 			return result
@@ -563,21 +599,68 @@ def process_file(filename, headerlines):
 		result = True
 		
 		try: 
-			extract_turnoff_timing_markers()
-			calculate_turnoff_characteristics()	
-		except AssertionError as e:
-			result = False
-			print_assertion_error(e)
-			
-		try: 				
-			extract_turnon_timing_markers()
-			calculate_turnon_characteristics()	
+			extract_rr_timing_markers_m2()
+			calculate_rr_characteristics_m2()
 		except AssertionError as e:
 			result = False
 			print_assertion_error(e)
 			
 		res['success'] = int(len(err) == 0) # 1: success, 0: errors occured.
-		visualize_output(purge_unresolved_placeholders = True)
+		visualize_output_m2(purge_unresolved_placeholders = True)
+		
+	print("")
+	return result
+	
+	
+def process_file_m9(filename, headerlines):
+	global par, res
+	result = False
+	
+	if read_file_header_and_data(filename):
+		try: 
+			assign_advanced_analysis_parameters_m9()
+			create_corrected_VCE_channel()
+			print("analysis:")
+			extract_voltage_and_current_values_m9()
+		except AssertionError as e:
+			print_assertion_error(e)
+			return result
+
+		result = True
+		
+		try: 
+			extract_turnoff_timing_markers_m9()
+			calculate_turnoff_characteristics_m9()	
+		except AssertionError as e:
+			result = False
+			print_assertion_error(e)
+			
+		try: 				
+			extract_turnon_timing_markers_m9()
+			calculate_turnon_characteristics_m9()	
+		except AssertionError as e:
+			result = False
+			print_assertion_error(e)
+			
+		res['success'] = int(len(err) == 0) # 1: success, 0: errors occured.
+		visualize_output_m9(purge_unresolved_placeholders = True)
+		
+	print("")
+	return result
+	
+	
+def process_file(filename, headerlines, method):
+	global par, res
+	
+	print("processing:\n\t'%s'" % filename)
+	assign_basic_analysis_parameters()
+	par['header_rows'] = headerlines
+
+	switcher = {
+		2 : lambda fn = filename, hl = headerlines : process_file_m2(fn, hl),
+		9 : lambda fn = filename, hl = headerlines : process_file_m9(fn, hl),
+	}
+	result = switcher.get(method, lambda : False)()
 		
 	print("")
 	return result

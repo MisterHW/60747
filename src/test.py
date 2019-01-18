@@ -15,4 +15,4 @@ import evaluate_waveform
 
 filen = '../HP2-02-SW2-10R/19-01-02 13-18-32 HP2-02-SW2 50 585 .txt'
 
-evaluate_waveform.process_file(filen, headerlines=22)
+evaluate_waveform.process_file(filen, headerlines=22, method=9)

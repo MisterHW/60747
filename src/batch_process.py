@@ -24,6 +24,7 @@ def init_argparse():
 	global args	
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--directory", type=extant_dir, help="starting path for processing.", required=True)
+	parser.add_argument("-m", "--method", type=int, help="Analysis method (2: diode reverse recovery, 9: IGBT switching characteristics.", required=True)
 	parser.add_argument("-r", "--recursive", action='store_true', default=False, help='recursively process subdirectories.')
 	parser.add_argument("-o", "--output", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
 	parser.add_argument("-l", "--headerlines", type=int, help='number of header lines to be processed separately (and skipped to jump to the data).', required=True)
@@ -45,7 +46,7 @@ def process_files(start_dir, recursive):
 	for f in sorted(os.listdir(start_dir)):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
-			if evaluate_waveform.process_file(f, args.headerlines):
+			if evaluate_waveform.process_file(f, args.headerlines, args.method):
 				evaluate_waveform.store_results(outp)
 			evaluate_waveform.clean_up()
 		if os.path.isdir(f) and recursive:
