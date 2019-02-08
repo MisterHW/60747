@@ -4,34 +4,12 @@ import numpy as np
 import math
 import scipy.optimize
 
-# range(), np.arange(), np.linspace increment from 0 to n-1
-# the erange extends the range functions by one that includes 
-# endpoint and accepts step size.
-erange = lambda start, stop, step: np.arange(start,stop+step,step) 
-
-### input parameters
-
-L = 50E-6    # H 
-C = 11000E-6 # F
-R = 0.016 + 0.01 # Ohm (8V drop at 500A plus 10mOhm shunt resistance)
-
-currents     = erange( 5,605,25)
-voltages     = erange(50,350,50)
-protection_voltage = 375
-temperatures = [26.3, 65.4, 84.8] # erange(20,100,20)
-
-# [high, low] gate driver isolation converter input voltages
-# these voltages have been determined empirically to result in 
-# [10,10], [15,15] and [18,15] V for the high and low voltage levels, respectively
-gatesupply_voltages = [[12.0,12.0], [17.2,17.2], [19.8, 17.2]] 
-
-fn = "table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
-	min(currents), max(currents),
-	min(voltages), max(voltages),
-	min(temperatures), max(temperatures)
-)
+import logging, sys
+#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 ### transformation functions for output value calculation
+
 
 def HMP4040_CH2_settings(values):
 	v_out = values['gate_supply'][1]
@@ -66,19 +44,32 @@ def estimate_double_pulse_presets(values):
 	i_lim = 5.0 # power supply current limit
 	I_pk  = values['i_pk']
 	v_nom = values['v_nom'] 
-	v_set = v_nom # starting value
 	v_tol = values['v_tol']
 	v_protect = values['v_protect']
+	R = values['R']
+	L = values['L']
+	C = values['C']
+			
+	# RLC series circuit quantities
+	alpha   = R / (2 * L)
+	omega_0 = 1.0 / math.sqrt(L * C) 
+	tau_0   = 2 * math.pi / omega_0
+	omega_d = math.sqrt(omega_0**2 - alpha**2)
+	
+	# estimate initial voltage assuming 
+	# E_C_initial = E_C_after_first_pulse + E_L_after_first_pulse + 0.5 * E_RLC_loss_per_period 
+	# E_RLC_loss_per_period = (1-exp(-t * R/L)) * E_C_initial
+	# E_C_initial = 1/(exp(-tau * R/L)) * (E_C_after_first_pulse + E_L_after_first_pulse)
+	E_C_after_first_pulse = 0.5 * C * v_nom**2
+	E_L_after_first_pulse = 0.5 * L * I_pk**2
+	E_C_initial = (E_C_after_first_pulse + E_L_after_first_pulse) / (math.exp(-0.5 * tau_0 * R/L))
+	v_set = math.sqrt(2 * E_C_initial / C) # goes to v_nom for R -> 0 , L -> 0
 	
 	pulse_duration_out_of_range = True
 	v_turnoff = 0
-	
+
 	for i in range(100): # iterate to find proper voltage settings and re-calculate pulse duration accordingly
 	
-		# RLC series circuit
-		alpha   = R / (2 * L)
-		omega_0 = 1.0 / math.sqrt(L * C) 
-		omega_d = math.sqrt(omega_0**2 - alpha**2)
 		# V(t) = v_nom*exp(-alpha*t)*cos(omega_d*t) 
 		# I(t) = Id*exp(-alpha*t)*sin(omega_d*t) 
 		# dI/dt= -alpha*Id*exp(-alpha*t)*sin(omega_d*t) + omega_d*Id*exp(-alpha*t)*cos(omega_d*t)
@@ -87,6 +78,9 @@ def estimate_double_pulse_presets(values):
 
 		# find pre-charge period based on required I_pk
 		t_interval = [0,(2*math.pi)/omega_d*(1/4+1E-6)]
+		if abs(I_pk / I_d) > 1:
+			# logging.error("Error: I_pk / I_d > 1, %g / %g" % (I_pk, I_d))
+			continue
 		t_est = math.asin(I_pk / I_d) / omega_d # initial guess based on alpha = 0 -> I_pk / I_d = sin(omega_d*t_est) 
 		t_pulse = scipy.optimize.newton(
 			func   = udsin,
@@ -101,8 +95,8 @@ def estimate_double_pulse_presets(values):
 			# I(t) does not reach I_pk during first quarter period.
 			t_pulse = t_interval[1]
 			v_next = v_set * 1.25
-			# print("pulse_duration_out_of_range")
-			# print("adjusting v_set %fV->%fV" % (v_set, v_next))
+			logging.debug("pulse_duration_out_of_range")
+			logging.debug("adjusting v_set %fV->%fV" % (v_set, v_next))
 			v_set = v_next 
 			continue 
 			
@@ -111,8 +105,8 @@ def estimate_double_pulse_presets(values):
 		
 		if abs(v_nom - v_turnoff) > v_tol:
 			v_next = v_set + (v_nom - v_turnoff)*0.5
-			# print(repr(values), v_turnoff)
-			# print("adjusting v_set %fV->%fV" % (v_set, v_next))
+			logging.debug(repr(values) + ' ' + str(v_turnoff))
+			logging.debug("adjusting v_set %fV->%fV" % (v_set, v_next))
 			v_set = v_next
 			continue
 		else:
@@ -137,10 +131,9 @@ def estimate_double_pulse_presets(values):
 ### output generation functions
 	
 def header_line(file):
-#	file.write('#HMP4040-CH2-V\tHMP4040-CH2-I\tHMP4040-CH3-V\tHMP4040-CH3-I\tHMP4040-CH4-V\tHMP4040-CH4-I\tPSI91000-V\tPSI91000-I\tDPULSE-V\tDPULSE-I\tDPULSE-PRECHG-T\tDUT-TEMP\n')
-#	file.write('#V\tA\tV\tA\tV\tA\tV\tA\tV\tA\ts\t°C\n')   
 	file.write('"HMP4040-CH2-V";"HMP4040-CH2-I";"HMP4040-CH3-V";"HMP4040-CH3-I";"HMP4040-CH4-V";"HMP4040-CH4-I";"PSI91000-V";"PSI91000-I";"DPULSE-V";"DPULSE-I";"DPULSE-PRECHG-T";"DUT-TEMP"\n')
 	file.write('"V";"A";"V";"A";"V";"A";"V";"A";"V";"A";"s";"°C"\n') 
+	
 	
 def add_line(file, values):
 	ch2 = HMP4040_CH2_settings(values)
@@ -163,26 +156,32 @@ def add_line(file, values):
 		)
 
 	
-if __name__ == "__main__":
-	print('\r\noutput = "%s"\r\n' % fn)
-	print('I = ', currents)
-	print('V = ', voltages)
-	print('T = ', temperatures)
-	print('Vg= ', gatesupply_voltages)
+def generate_table(input_params):
+	print('\r\noutput = "%s"\r\n' % input_params['fn'])
+	print('I = ', input_params['currents'])
+	print('V = ', input_params['voltages'])
+	print('T = ', input_params['temperatures'])
+	print('Vg= ', input_params['gatesupply_voltages'])
 	
-	f = open(fn, 'w+')
+	f = open(input_params['fn'], 'w+')
 	header_line(f)
 	# set of single acquisition parameters as a dict to enable
 	# iterating over more dimensions without changing function signatures
-	values = {'v_protect':protection_voltage, 'v_tol':0.05} 
+	values = {
+		'v_protect':input_params['protection_voltage'],
+		'v_tol':0.05, 
+		'R':input_params['R'],
+		'L':input_params['L'],
+		'C':input_params['C'],
+		}
 	
-	for gate_supply in gatesupply_voltages:
+	for gate_supply in input_params['gatesupply_voltages']:
 		values['gate_supply'] = gate_supply
-		for t in temperatures:
+		for t in input_params['temperatures']:
 			values['temp'] = t
-			for v in voltages:
+			for v in input_params['voltages']:
 				values['v_nom'] = v
-				for i in currents:
+				for i in input_params['currents']:
 					values['i_pk'] = i
 					add_line(f, values)
 
