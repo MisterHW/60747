@@ -1,6 +1,6 @@
 #!python3
 
-# double-pulse test waveform evaluation according to IEC 60747-9:2007.
+# double-pulse test waveform evaluation according to IEC 60747-2:2000 and 60747-9:2007.
 # compatible input file version: unspecified format of Cheleiha V2 as of 20181112. 
 # Header format can change. Header length depends on LabView input.
 #
@@ -34,12 +34,20 @@ timebase_keys = [
 ]
 
 # output table format
-output_table_line_template = \
+output_table_line_templates = {\
+	2:\
 	'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
 	'{V_CE_turnoff};{V_DC};{Ipk_turnoff};{Temp.};{RG};{V_GE_high};{V_GE_low};' + \
 	'{turn_off_t1};{turn_off_t2};{turn_off_t3};{turn_off_t4};{turn_on_t1};{turn_on_t2};{turn_on_t3};{turn_on_t4};' + \
 	'{E_turnoff_J};{E_turnon_J};{turn_off_t3};{turn_off_t4};' + \
-	'{I_droop_during_pause};'
+	'{I_droop_during_pause};',\
+	9:\
+	'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
+	'{V_CE_turnoff};{V_DC};{Ipk_turnoff};{Temp.};{RG};{V_GE_high};{V_GE_low};' + \
+	'{turn_off_t1};{turn_off_t2};{turn_off_t3};{turn_off_t4};{turn_on_t1};{turn_on_t2};{turn_on_t3};{turn_on_t4};' + \
+	'{E_turnoff_J};{E_turnon_J};{turn_off_t3};{turn_off_t4};' + \
+	'{I_droop_during_pause};',\
+	}
 
 
 CH = []
@@ -53,15 +61,30 @@ plotfile_template_m2 = same_path_as_script('gnuplot_template_m2.plt')
 plotfile_template_m9 = same_path_as_script('gnuplot_template_m9.plt')
 
 
-
-
-def assign_basic_analysis_parameters():
+def assign_basic_analysis_parameters_m2():
 	global par 
 	### basic file information
 	par['file_ext'] = '.txt'
 	par['ndatacols'] = 4
 	par['skipped_header_rows'] = 4
 	par['R_shunt'] = 0.00984
+	par['CH_VGE'] = 0 # Channel 1 : LS gate-emitter voltage (optional)
+	par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
+	par['CH_VD']  = 2 # Channel 3 : diode voltage
+	par['CH_ID']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
+
+
+def assign_basic_analysis_parameters_m9():
+	global par 
+	### basic file information
+	par['file_ext'] = '.txt'
+	par['ndatacols'] = 4
+	par['skipped_header_rows'] = 4
+	par['R_shunt'] = 0.00984
+	par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
+	par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
+	par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
+	par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
 
 	
 def assign_advanced_analysis_parameters_m2():
@@ -69,28 +92,47 @@ def assign_advanced_analysis_parameters_m2():
 	global hdr, par
 
 	# scope channel mapping
-	par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
 	par['TS_VGE'] = float(hdr['dt Cha.1 [Sek]']) # sampling time step 
-	par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
 	par['TS_VDC'] = float(hdr['dt Cha.2 [Sek]'])
-	par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
-	par['TS_VCE'] = float(hdr['dt Cha.3 [Sek]'])
-	par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
-	par['TS_IE']  = float(hdr['dt Cha.4 [Sek]'])
-	# TODO
+	par['TS_VD']  = float(hdr['dt Cha.3 [Sek]'])
+	par['TS_ID']  = float(hdr['dt Cha.4 [Sek]'])
+	# nominal gate driver timing
+	par['t_1st_duration'] =  float(hdr['pre-charge [mS]']) * 1E-3
+	par['t_inter_pulse_duration'] = float(hdr['pause [mS]']) * 1E-3
+	par['t_2nd_duration'] =  float(hdr['puls [mS]' ]) * 1E-3
+	assert par['t_1st_duration'] > 0, "\nduration needs to be positive, typically > 0.5E-6"
+	assert par['t_inter_pulse_duration'] > 0, "\nduration needs to be positive, typically > 50E-6"
+	assert par['t_2nd_duration'] > 0, "\nduration needs to be positive, typically > 5E-6"
+	t_trigger = 0
+	par['t_1st_rise_nom'] = t_trigger - par['t_inter_pulse_duration'] - par['t_1st_duration'] 
+	par['t_1st_fall_nom'] = t_trigger - par['t_inter_pulse_duration']
+	par['t_2nd_rise_nom'] = t_trigger # coincident with trigger (not accounting for propagation delay in the LWL and gate driver circuitry)
+	par['t_2nd_fall_nom'] = t_trigger + par['t_2nd_duration']
+	# switching event regions
+	par['tAOI_turn_off_bounds'] = [par['t_1st_fall_nom'] - 0, par['t_1st_fall_nom'] + par['t_inter_pulse_duration'] * 0.9]
+	par['tAOI_turn_off_bounds_begin'] = par['tAOI_turn_off_bounds'][0]
+	par['tAOI_turn_off_bounds_end']   = par['tAOI_turn_off_bounds'][1]
+	par['tAOI_turn_on_bounds']  = [par['t_2nd_rise_nom'] - 0.5E-6, par['t_2nd_rise_nom'] + par['t_2nd_duration'] * 0.9]
+	par['tAOI_turn_on_bounds_begin'] = par['tAOI_turn_on_bounds'][0]
+	par['tAOI_turn_on_bounds_end']   = par['tAOI_turn_on_bounds'][1]
+	# slow variation AOIs
+	par['tAOI_D_FWD'] = [par['t_1st_fall_nom'] + 5E-6, par['t_2nd_rise_nom'] - 2E-6] # AOI for linear forward current and constant diode forward voltage esimtation
+	assert par['tAOI_D_FWD'][1] > par['tAOI_D_FWD'][0], "invalid tAOI_D_FWD interval. t_inter_pulse_duration too small or error in t_1st_fall_nom or t_2nd_rise_nom definitions."
+
+	assert par['t_2nd_duration'] > 2E-6, "t_2nd_duration is too short for selected tAOI_1st_fr_event and tAOI_rr_event AOIs. Please re-evaluate switching waveforms and adjust minimum AOI size accordingly."
+	par['tAOI_1st_fr_event'] = [par['t_1st_fall_nom'] - 0, par['t_1st_fall_nom'] + min(2E-6, par['t_2nd_duration'])]
+	par['tAOI_rr_event'] = [par['t_2nd_rise_nom'] - 0, par['t_2nd_rise_nom'] + min(2E-6, par['t_2nd_duration'])]
+	
+	# transient event AOIs
 	
 	
 def assign_advanced_analysis_parameters_m9():
 	print("parameters:")		
 	global hdr, par
 	# scope channel mapping
-	par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
 	par['TS_VGE'] = float(hdr['dt Cha.1 [Sek]']) # sampling time step 
-	par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
 	par['TS_VDC'] = float(hdr['dt Cha.2 [Sek]'])
-	par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
 	par['TS_VCE'] = float(hdr['dt Cha.3 [Sek]'])
-	par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
 	par['TS_IE']  = float(hdr['dt Cha.4 [Sek]'])
 	# nominal gate driver timing
 	par['t_1st_duration'] =  float(hdr['pre-charge [mS]']) * 1E-3
@@ -259,7 +301,20 @@ def extract_voltage_and_current_values_m2():
 	global CH, par, res
 	
 	print("\tvoltage and current levels")
-	# TODO
+	# extract basic waveform voltages and currents
+
+	res['I_1st_fr_peak'] = CH[par['CH_ID']].percentile_value(par['tAOI_1st_fr_event'], 0.99)	
+	res['V_D_1st_fr_peak'] = CH[par['CH_VD']].percentile_value(par['tAOI_1st_fr_event'], 0.99)	
+	res['V_D_1st_on_av'] = CH[par['CH_VD']].average(par['tAOI_D_FWD'])[0]
+	res['V_DC_1st_on_av'] = CH[par['CH_VDC']].average(par['tAOI_D_FWD'])[0]
+	res['I_rr_fwd'] = CH[par['CH_ID']].percentile_value(par['tAOI_rr_event'], 0.995)
+	res['I_rr_rev_max'] = CH[par['CH_ID']].percentile_value(par['tAOI_rr_event'], 0.001)		
+	
+	res['I_1st_on_fit_a_bx']  = CH[par['CH_ID']].lin_fit(par['tAOI_D_FWD'])
+	I1 = lambda t, a=res['I_1st_on_fit_a_bx'][0], b=res['I_1st_on_fit_a_bx'][1] : [t, a + b*t]
+	res['I_1st_fr_peak_lin_estimate'] = I1(par['t_1st_fall_nom'])
+	res['I_rr_fwd_lin_estimate'] = I1(par['t_2nd_rise_nom'])
+ 	# TODO
 	
 	
 def extract_voltage_and_current_values_m9():
@@ -542,8 +597,8 @@ def visualize_output_m9( purge_unresolved_placeholders = False):
 	__visualize_output(plotfile_template_m9, purge_unresolved_placeholders)
 
 
-def store_header(fn):
-	line = output_table_line_template.replace('"{','"').replace('}"','"').replace('{','"').replace('}','"') + '\n'
+def store_header(fn, method):
+	line = output_table_line_templates[method].replace('"{','"').replace('}"','"').replace('{','"').replace('}','"') + '\n'
 	if fn == None:
 		print(line)
 	else:
@@ -553,8 +608,8 @@ def store_header(fn):
 	return
 
 
-def store_results(fn):
-	line = resolve_placeholders(output_table_line_template) + '\n'
+def store_results(fn, method):
+	line = resolve_placeholders(output_table_line_templates[method]) + '\n'
 	if fn == None:
 		print(line)
 	else:
@@ -583,13 +638,13 @@ def print_assertion_error(error):
 	
 	
 def process_file_m2(filename, headerlines):	
-	global par, res
+	global par, res, CH 
 	result = False
 	
 	if read_file_header_and_data(filename):
 		try: 
 			assign_advanced_analysis_parameters_m2()
-			create_corrected_VCE_channel()
+			CH[par['CH_ID']].invert()
 			print("analysis:")
 			extract_voltage_and_current_values_m2()
 		except AssertionError as e:
@@ -653,7 +708,13 @@ def process_file(filename, headerlines, method):
 	global par, res
 	
 	print("processing:\n\t'%s'" % filename)
-	assign_basic_analysis_parameters()
+	
+	assign_basic_analysis_parameters = {
+		2 : assign_basic_analysis_parameters_m2,
+		9 : assign_basic_analysis_parameters_m9,
+	}
+	assign_basic_analysis_parameters.get(method, lambda : False)()
+	
 	par['header_rows'] = headerlines
 
 	switcher = {

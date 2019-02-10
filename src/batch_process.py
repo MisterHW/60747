@@ -39,7 +39,7 @@ def process_files(start_dir, recursive):
 	if os.path.exists(outp):
 		os.remove(outp) 
 		print('deleted %s' % outp)
-	evaluate_waveform.store_header(outp)
+	evaluate_waveform.store_header(outp, method)
 	
 	# iterate over all suitable files in directory. 
 	# Recursively process subdirectories if required.
@@ -47,7 +47,7 @@ def process_files(start_dir, recursive):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
 			if evaluate_waveform.process_file(f, args.headerlines, args.method):
-				evaluate_waveform.store_results(outp)
+				evaluate_waveform.store_results(outp, args.method)
 			evaluate_waveform.clean_up()
 		if os.path.isdir(f) and recursive:
 			process_files(f, recursive)
