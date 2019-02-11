@@ -26,7 +26,7 @@ p['temperatures'] = [26.3, 65.4, 84.8] # erange(20,100,20)
 # [10,10], [15,15] and [18,15] V for the high and low voltage levels, respectively
 p['gatesupply_voltages'] = [[12.0,12.0], [17.2,17.2], [19.8, 17.2]] 
 
-p['fn'] = "HP2_IGBT_table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
+p['fn'] = "HP2_IGBT_table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC_fine.csv" % (
 	min(p['currents']), max(p['currents']),
 	min(p['voltages']), max(p['voltages']),
 	min(p['temperatures']), max(p['temperatures'])

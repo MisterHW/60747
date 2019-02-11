@@ -26,7 +26,7 @@ p['temperatures'] = [25.9, 65.4, 84.8]
 # [10,10], [15,15] and [18,15] V for the high and low voltage levels, respectively
 p['gatesupply_voltages'] = [[19.8, 17.2]] 
 
-p['fn'] = "HPDSC_D_table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC.csv" % (
+p['fn'] = "HPDSC_D_table_I%.2g-%.2gA_V%.2g_%.2gV_T%.2g-%.2gdegC_fine.csv" % (
 	min(p['currents']), max(p['currents']),
 	min(p['voltages']), max(p['voltages']),
 	min(p['temperatures']), max(p['temperatures'])
