@@ -12,8 +12,8 @@ erange = lambda start, stop, step: np.arange(start,stop+step,step)
 
 p =  {} # parameters dictionary
 
-p['L'] = 50E-6  # H 
-p['C'] = 800E-6 # F
+p['L'] = 51E-6  # H 
+p['C'] = 840E-6 # F
 p['R'] = 0.0008 + 0.00984 # Ohm (4V drop at 500A plus 10mOhm shunt resistance)
 
 p['currents']     = erange( 5,605,10)
