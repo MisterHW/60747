@@ -81,6 +81,7 @@ def estimate_double_pulse_presets(values):
 		if abs(I_pk / I_d) > 1:
 			# logging.error("Error: I_pk / I_d > 1, %g / %g" % (I_pk, I_d))
 			continue
+			
 		t_est = math.asin(I_pk / I_d) / omega_d # initial guess based on alpha = 0 -> I_pk / I_d = sin(omega_d*t_est) 
 		t_pulse = scipy.optimize.newton(
 			func   = udsin,
@@ -101,7 +102,6 @@ def estimate_double_pulse_presets(values):
 			continue 
 			
 		v_turnoff = udsin(t_pulse, math.pi/2, v_set, alpha, omega_d, 0)
-		
 		
 		if abs(v_nom - v_turnoff) > v_tol:
 			v_next = v_set + (v_nom - v_turnoff)*0.5

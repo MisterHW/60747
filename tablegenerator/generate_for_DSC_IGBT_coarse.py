@@ -14,7 +14,7 @@ p =  {} # parameters dictionary
 
 p['L'] = 51E-6  # H 
 p['C'] = 840E-6 # F
-p['R'] = 0.0008 + 0.00984 # Ohm (4V drop at 500A plus 10mOhm shunt resistance)
+p['R'] = 0.004 + 0.00984 # Ohm (linearized voltage drop contribution to damping (2V @ 500A) + 10mOhm shunt resistance)
 
 p['currents']     = erange( 5,605,25)
 p['voltages']     = erange(50,350,50)

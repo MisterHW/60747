@@ -12,9 +12,9 @@ erange = lambda start, stop, step: np.arange(start,stop+step,step)
 
 p =  {} # parameters dictionary
 
-p['L'] = 50E-6    # H 
+p['L'] = 51E-6    # H 
 p['C'] = 11000E-6 # F
-p['R'] = 0.0008 + 0.01 # Ohm (4V drop at 500A plus 10mOhm shunt resistance)
+p['R'] = 0.004 + 0.00984 # Ohm (linearized voltage drop contribution to damping (2V @ 500A) + 10mOhm shunt resistance)
 
 p['currents']     = erange( 5,605,10)
 p['voltages']     = erange(50,350,50)
