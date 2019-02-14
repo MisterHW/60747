@@ -83,13 +83,19 @@ def estimate_double_pulse_presets(values):
 			continue
 			
 		t_est = math.asin(I_pk / I_d) / omega_d # initial guess based on alpha = 0 -> I_pk / I_d = sin(omega_d*t_est) 
-		t_pulse = scipy.optimize.newton(
-			func   = udsin,
-			x0     = t_est,
-			fprime = udsin_prime,
-			args   = (0, I_d, alpha, omega_d, -I_pk),
-			tol    = 1E-8
-			)
+		try:
+			t_pulse = scipy.optimize.newton(
+				func   = udsin,
+				x0     = t_est,
+				fprime = udsin_prime,
+				args   = (0, I_d, alpha, omega_d, -I_pk),
+				tol    = 1E-8,
+				maxiter = 100,
+				)
+		except RuntimeError as e:
+			logging.error('scipy.optimize.newton failed: %s' % e)
+			return [np.nan, np.nan, np.nan]
+		
 	
 		pulse_duration_out_of_range = (t_pulse < t_interval[0]) or (t_pulse > t_interval[1])
 		if pulse_duration_out_of_range:
