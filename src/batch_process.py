@@ -31,7 +31,7 @@ def init_argparse():
 	args = parser.parse_args()
 	
 	
-def process_files(start_dir, recursive):
+def process_files(start_dir, recursive, method):
 	# prepare output file: create absolute path, initialize file with header row.
 	# Joining in path.join() continues from from the last absolute path argument,
 	# so if args.output is relative, it gets resolved w.r.t. args.directory .
@@ -55,5 +55,5 @@ def process_files(start_dir, recursive):
 	
 if __name__ == "__main__":
 	init_argparse()
-	process_files(args.directory, args.recursive)
+	process_files(args.directory, args.recursive, args.method)
 	
