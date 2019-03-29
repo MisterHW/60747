@@ -35,7 +35,7 @@ def init_argparse():
 	
 def process_files(start_dir, recursive, method):
 	# prepare output file: create absolute path, initialize file with header row.
-	# Joining in path.join() continues from from the last absolute path argument,
+	# Joining in path.join() continues from the last absolute path argument,
 	# so if args.output is relative, it gets resolved w.r.t. args.directory .
 	outp = os.path.join(os.path.abspath(args.directory), args.output)
 	if os.path.exists(outp):
