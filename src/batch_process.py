@@ -26,37 +26,37 @@ def init_argparse():
 	global args	
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--directory", type=extant_dir, help="starting path for processing.", required=True)
-	parser.add_argument("-m", "--method", type=string, help="Analysis method (folder name of a template in methods/).", required=True)
 	parser.add_argument("-r", "--recursive", action='store_true', default=False, help='recursively process subdirectories.')
-	parser.add_argument("-o", "--output", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
-	parser.add_argument("-l", "--headerlines", type=int, help='number of header lines to be processed separately (and skipped to jump to the data).', required=True)
+	parser.add_argument("-f", "--inputformat", type=str, help="Input format identifier. (folder name of a template in formats/)", required=True)	
+	parser.add_argument("-m", "--method", type=str, help="Analysis method identifier (folder name of a template in methods/).", required=True)
+	parser.add_argument("-o", "--outputfilename", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
 	args = parser.parse_args()
 	
 	
-def process_files(start_dir, recursive, method):
+def process_files(start_dir):
 	# prepare output file: create absolute path, initialize file with header row.
 	# Joining in path.join() continues from the last absolute path argument,
 	# so if args.output is relative, it gets resolved w.r.t. args.directory .
-	outp = os.path.join(os.path.abspath(args.directory), args.output)
+	outp = os.path.join(os.path.abspath(args.directory), args.outputfilename)
 	if os.path.exists(outp):
 		os.remove(outp) 
 		print('deleted %s' % outp)
 		
-	evaluate_waveform.store_header(outp, method)
+	evaluate_waveform.store_header(outp, args)
 	
 	# iterate over all suitable files in start_dir. 
 	# Recursively process subdirectories if required.
 	for f in sorted(os.listdir(start_dir)):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
-			if evaluate_waveform.process_file(f, args.headerlines, args.method):
-				evaluate_waveform.store_results(outp, args.method)
+			if evaluate_waveform.process_file(f, args):
+				evaluate_waveform.store_results(outp, args)
 			evaluate_waveform.clean_up()
-		if os.path.isdir(f) and recursive:
-			process_files(f, recursive)
+		if os.path.isdir(f) and args.recursive:
+			process_files(f)
 	
 	
 if __name__ == "__main__":
 	init_argparse()
-	process_files(args.directory, args.recursive, args.method)
+	process_files(args.directory)
 	
