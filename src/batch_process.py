@@ -2,7 +2,8 @@
 
 import argparse
 import os.path
-import evaluate_waveform
+import importlib 
+# import later: evaluate_waveform
 
 args = None
 
@@ -27,7 +28,8 @@ def init_argparse():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--directory", type=extant_dir, help="starting path for processing.", required=True)
 	parser.add_argument("-r", "--recursive", action='store_true', default=False, help='recursively process subdirectories.')
-	parser.add_argument("-f", "--inputformat", type=str, help="Input format identifier. (folder name of a template in formats/)", required=True)	
+	parser.add_argument("-f", "--inputformat", type=str, help="Input format identifier. (folder name of a template in formats/)", required=True)
+	parser.add_argument("-s", "--setup", type=str, help="Setup identifier for pre-processing (folder name of a template in setups/)", required=True)	
 	parser.add_argument("-m", "--method", type=str, help="Analysis method identifier (folder name of a template in methods/).", required=True)
 	parser.add_argument("-o", "--outputfilename", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
 	args = parser.parse_args()
@@ -58,5 +60,6 @@ def process_files(start_dir):
 	
 if __name__ == "__main__":
 	init_argparse()
+	evaluate_waveform = importlib.import_module('methods.%s.evaluate_waveform' % args.method)
 	process_files(args.directory)
 	
