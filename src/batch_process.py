@@ -36,6 +36,8 @@ def init_argparse():
 	
 	
 def process_files(start_dir):
+	analysis = evaluate_waveform.analysisProcessor(args)
+	
 	# prepare output file: create absolute path, initialize file with header row.
 	# Joining in path.join() continues from the last absolute path argument,
 	# so if args.output is relative, it gets resolved w.r.t. args.directory .
@@ -44,16 +46,16 @@ def process_files(start_dir):
 		os.remove(outp) 
 		print('deleted %s' % outp)
 		
-	evaluate_waveform.store_header(outp, args)
+	analysis.store_header(outp)
 	
 	# iterate over all suitable files in start_dir. 
 	# Recursively process subdirectories if required.
 	for f in sorted(os.listdir(start_dir)):
 		f = os.path.join(start_dir, f)
 		if os.path.exists(f):
-			if evaluate_waveform.process_file(f, args):
-				evaluate_waveform.store_results(outp, args)
-			evaluate_waveform.clean_up()
+			if analysis.process_file(f):
+				analysis.store_results(outp)
+			analysis.clean_up()
 		if os.path.isdir(f) and args.recursive:
 			process_files(f)
 	

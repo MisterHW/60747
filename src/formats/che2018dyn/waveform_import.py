@@ -1,3 +1,8 @@
+import numpy as np
+import sys
+import os
+same_path_as_script = lambda filename: os.path.join(os.path.dirname(__file__), filename)
+sys.path.append(same_path_as_script('../../'))
 import wfa
 
 # compatible input file version: unspecified format of Cheleiha V2 as of 20181112. 
@@ -60,23 +65,26 @@ def extract_header_information(filename, header_rows, skip = 0):
 	
 	return dict
 
-	
-def read_file_header_and_data(filename):
-	global CH, hdr, par
+
+# parameters:
+#	str filename: input file 
+#	analysisData analysis_data: instance for parameters, receiving data
+# 	read_file_header_and_data return value: success (boolean)
+def read_file_header_and_data(filename, analysis_data):
 	
 	fn_root, fn_extension = os.path.splitext(filename)
-	if fn_extension != par['file_ext']:
+	if fn_extension != analysis_data.par['file_ext']:
 		print("\t file extension mismatch -> skipped")
 		return False
-	par['file_root'] = fn_root
-	par['file_base'] = os.path.basename(filename)
+	analysis_data.par['file_root'] = fn_root
+	analysis_data.par['file_base'] = os.path.basename(filename)
 	
 	### read extended file information
 	print("reading header:")
-	hdr = extract_header_information(filename, par['header_rows'], par['skipped_header_rows'])
+	analysis_data.hdr = extract_header_information(filename, analysis_data.par['header_rows'], analysis_data.par['skipped_header_rows'])
 	
-	for key in sorted(hdr.keys()):
-		print("\t%s = %s" % (key, hdr[key]))
+	for key in sorted(analysis_data.hdr.keys()):
+		print("\t%s = %s" % (key, analysis_data.hdr[key]))
 	
 	### read Cheleiha V2 saved waveform file as ndarray, rejecting header rows.
 	print("reading data:")
@@ -86,25 +94,28 @@ def read_file_header_and_data(filename):
 		fname = filename, 
 		dtype = 'float', 
 		delimiter = '\t', 
-		skiprows = par['header_rows'], 
+		skiprows = analysis_data.par['header_rows'], 
 		#[comma separated floats] converters = per_column_converters,
 		unpack = True,		
 		)
 	print("\tinput array size = " + repr(data.shape))
-	par['n_samples'] = data.shape[1]
+	analysis_data.par['n_samples'] = data.shape[1]
 	
 	### process waveforms
 	# create one WaveformAnazyer instance for each channel
 	# assume trigger position (t=0) is at the center of the waveform 
 	
-	timebases = [ float(hdr[timebase_keys[n]]) for n in range(0,len(timebase_keys)) ]
-	CH = [ 
+	timebases = [ float(analysis_data.hdr[timebase_keys[n]]) for n in range(0,len(timebase_keys)) ]
+	analysis_data.CH = [ 
 		wfa.WaveformAnalyzer(
 			samples_data     = data[n], 
 			timebase         = timebases[n], 
 			t0_samplepos     = int(len(data[n])/2),
 			timebase_unitstr = 's',
 			id_str           = 'Channel %d' % (n+1)
-		) for n in range(0,par['ndatacols']) ]
+		) for n in range(0,analysis_data.par['ndatacols']) ]
 		
 	return True
+	
+	
+	

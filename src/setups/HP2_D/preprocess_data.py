@@ -1,6 +1,6 @@
 
 
-def assign_basic_analysis_parameters_m2():
+def assign_basic_analysis_parameters():
 	global par 
 	### basic file information
 	par['file_ext'] = '.txt'
@@ -16,7 +16,7 @@ def assign_basic_analysis_parameters_m2():
 
 
 	
-def assign_advanced_analysis_parameters_m2():
+def assign_advanced_analysis_parameters():
 	print("parameters:")		
 	global hdr, par
 
