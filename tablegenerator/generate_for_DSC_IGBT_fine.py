@@ -16,9 +16,8 @@ p['L'] = 51E-6  # H
 p['C'] = 840E-6 # F
 p['R'] = 0.004 + 0.00984 # Ohm (linearized voltage drop contribution to damping (2V @ 500A) + 10mOhm shunt resistance)
 
-
 p['currents']     = erange( 5,605,10)
-p['voltages']     = erange(50,350,50)
+p['voltages']     = erange(50,300,50)
 p['protection_voltage'] = 420
 p['temperatures'] = [25.9, 65.4, 84.8]
 
