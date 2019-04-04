@@ -1,3 +1,7 @@
 /src/__pycache__
 /test/sample data (old)
 /doc
+/test/HP2-IGBT/*.plt
+/test/HP2-IGBT/*.csv
+/test/HP2-D/*.plt
+/test/HP2-D/*.csv
