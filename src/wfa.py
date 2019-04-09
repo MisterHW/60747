@@ -62,9 +62,21 @@ class WaveformAnalyzer:
 		return [av/nsmp, nsmp]
 		
 		
-	def percentile_values(self, tAOI, percentiles):
+	def sorted_points(self, tAOI):
 		sAOI = self.time_to_smp(tAOI)
-		sorted_samples = np.sort(self.s[round(sAOI[0]):round(sAOI[1])]) # quicksort ascending
+		y = self.s[round(sAOI[0]):round(sAOI[1])]
+		x = self.samples_t(tAOI, len(y))
+		indices = np.argsort(y)
+		return list(zip(x[indices],y[indices])) 		
+		
+		
+	def sorted_samples(self, tAOI):
+		sAOI = self.time_to_smp(tAOI)
+		return np.sort(self.s[round(sAOI[0]):round(sAOI[1])]) # quicksort ascending		
+		
+		
+	def percentile_values(self, tAOI, percentiles):
+		sorted_samples = self.sorted_samples(tAOI)
 		nsmp = len(sorted_samples)
 		vals  = [ sorted_samples[max(0, min(round((nsmp-1)*p), nsmp-1))] for p in percentiles]
 		return vals 

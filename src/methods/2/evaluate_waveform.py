@@ -58,18 +58,24 @@ class analysisProcessor:
 		d.res['V_D_1st_fr_peak'] = d.CH[d.par['CH_VD']].percentile_value(d.par['tAOI_1st_fr_event'], 0.99)	
 		d.res['V_D_1st_on_av'] = d.CH[d.par['CH_VD']].average(d.par['tAOI_D_FWD'])[0]
 		d.res['V_DC_1st_on_av'] = d.CH[d.par['CH_VDC']].average(d.par['tAOI_D_FWD'])[0]
-		d.res['I_rr_fwd'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.995)
-		d.res['I_rr_rev_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.001)		
+		d.res['I_rr_fwd_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.98)
+		d.res['I_rr_rev_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.001)	
 		
 		d.res['I_1st_on_fit_a_bx']  = d.CH[d.par['CH_ID']].lin_fit(d.par['tAOI_D_FWD'])
 		I1 = lambda t, a=d.res['I_1st_on_fit_a_bx'][0], b=d.res['I_1st_on_fit_a_bx'][1] : [t, a + b*t]
 		d.res['I_1st_fr_peak_lin_estimate'] = I1(d.par['t_1st_fall_nom'])[1]
 		d.res['I_rr_fwd_lin_estimate'] = I1(d.par['t_2nd_rise_nom'])[1]
-		# TODO	
 				
 			
 	def extract_rr_timing_markers(self):
-		# TODO
+		d = self.data
+		
+		points = d.CH[d.par['CH_ID']].sorted_points(d.par['tAOI_rr_event'])
+		threshold = 0.9 * d.res['I_rr_rev_max']
+		points_bisect_idx = next(idx for idx, item in enumerate(points) if item[1] > threshold)
+		points_rm = points[0:points_bisect_idx]
+		
+		print(points)
 		return
 		
 		
