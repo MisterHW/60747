@@ -5,3 +5,4 @@
 /test/HP2-IGBT/*.csv
 /test/HP2-D/*.plt
 /test/HP2-D/*.csv
+*.pyc

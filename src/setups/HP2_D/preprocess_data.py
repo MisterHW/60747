@@ -48,7 +48,8 @@ def assign_advanced_analysis_parameters(analysis_data):
 	# slow variation AOIs
 	d.par['tAOI_D_FWD'] = [d.par['t_1st_fall_nom'] + 5E-6, d.par['t_2nd_rise_nom'] - 2E-6] # AOI for linear forward current and constant diode forward voltage esimtation
 	assert d.par['tAOI_D_FWD'][1] > d.par['tAOI_D_FWD'][0], "invalid tAOI_D_FWD interval. t_inter_pulse_duration too small or error in t_1st_fall_nom or t_2nd_rise_nom definitions."
-
+	d.par['tAOI_D_FWD_begin'] = d.par['tAOI_D_FWD'][0]
+	d.par['tAOI_D_FWD_end'] = d.par['tAOI_D_FWD'][1]
 	assert d.par['t_2nd_duration'] > 2E-6, "t_2nd_duration is too short for selected tAOI_1st_fr_event and tAOI_rr_event AOIs. Please re-evaluate switching waveforms and adjust minimum AOI size accordingly."
 	d.par['tAOI_1st_fr_event'] = [d.par['t_1st_fall_nom'] - 0, d.par['t_1st_fall_nom'] + min(2E-6, d.par['t_2nd_duration'])]
 	d.par['tAOI_1st_fr_event_begin'] = d.par['tAOI_1st_fr_event'][0]
@@ -57,10 +58,6 @@ def assign_advanced_analysis_parameters(analysis_data):
 	d.par['tAOI_rr_event_begin'] = d.par['tAOI_rr_event'][0]
 	d.par['tAOI_rr_event_end']   = d.par['tAOI_rr_event'][1]
 	# transient event AOIs
-	
-	
-def prepare_data(analysis_data):
-	return
 	
 	
 def prepare_data(analysis_data):

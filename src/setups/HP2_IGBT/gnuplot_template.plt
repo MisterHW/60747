@@ -39,15 +39,17 @@ plot tmp
 unset table 
 
 
-set key box top right noautotitle
+set key box top right noautotitle width 1.25
 set xzeroaxis
 set title "Doppelpulstest: {file_base}" font 'Verdana,14'
 set mxtics 5
 set mytics 5 
 set xtics nomirror
-set x2tics font 'Verdana Bold, 12' offset 0, -0.25
+set x2tics nomirror
+set grid ytics xtics
+set link x2 via x inverse x
+set mx2tics 4
 set format x2 ""
-set grid ytics x2tics
 
 decimation = 2
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6

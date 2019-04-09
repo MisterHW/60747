@@ -63,8 +63,8 @@ class analysisProcessor:
 		
 		d.res['I_1st_on_fit_a_bx']  = d.CH[d.par['CH_ID']].lin_fit(d.par['tAOI_D_FWD'])
 		I1 = lambda t, a=d.res['I_1st_on_fit_a_bx'][0], b=d.res['I_1st_on_fit_a_bx'][1] : [t, a + b*t]
-		d.res['I_1st_fr_peak_lin_estimate'] = I1(d.par['t_1st_fall_nom'])
-		d.res['I_rr_fwd_lin_estimate'] = I1(d.par['t_2nd_rise_nom'])
+		d.res['I_1st_fr_peak_lin_estimate'] = I1(d.par['t_1st_fall_nom'])[1]
+		d.res['I_rr_fwd_lin_estimate'] = I1(d.par['t_2nd_rise_nom'])[1]
 		# TODO	
 				
 			
