@@ -82,14 +82,16 @@ class WaveformAnalyzer:
 		return vals 
 		
 		
-	def samples_in_AOI(tAOI):
+	def samples_in_AOI(self, tAOI):
 		# TODO 
 		return []
 		
 		
-	def samples_in_rect(tAOI, yAOI):
-		# TODO
-		return []
+	def sorted_samples_in_rect(self, tAOI, yAOI):
+		points_in_tAOI = self.sorted_points(tAOI)
+		idx0 = next(idx for idx, item in enumerate(points_in_tAOI) if item[1] > yAOI[0])
+		idx1 = next(idx for idx, item in enumerate(points_in_tAOI) if item[1] > yAOI[1])
+		return points_in_tAOI[min(idx0, idx1): max(idx0, idx1)]
 		
 		
 	def percentile_value(self, tAOI, percentile):
@@ -137,7 +139,7 @@ class WaveformAnalyzer:
 		if (t_edge > self.timebase) and (self.timebase > 0):
 			tau_samples = np.ceil(t_edge/self.timebase)
 		# prepare data 
-		sAOI = list(map(round, self.time_to_smp(tAOI)))
+		sAOI = list(map(lambda x : int(round(x)), self.time_to_smp(tAOI)))
 		s_y = self.s[sAOI[0]:sAOI[1]+1]
 		#	detect edge
 		# see https://dsp.stackexchange.com/questions/30039/detect-to-rising-stable-and-falling-point-in-non-smooth-rectangular-wave ?

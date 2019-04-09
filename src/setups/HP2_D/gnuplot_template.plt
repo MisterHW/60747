@@ -86,9 +86,21 @@ if(annotation == 5) \
 	set y2tics add ("0.5*I_R_M" 0.5*{I_rr_rev_max} ); \
 	set arrow from {tAOI_rr_event_begin}*1E+6, 0.5*{I_rr_rev_max}  to {tAOI_rr_event_end}*1E+6, 0.5*{I_rr_rev_max} as 7 back; \
 	set y2tics add ("I_R_M" {I_rr_rev_max} ); \
-	set arrow from {tAOI_rr_event_begin}*1E+6, 1.0*{I_rr_rev_max}  to {tAOI_rr_event_end}*1E+6, 1.0*{I_rr_rev_max} as 7 back
-
-
+	set arrow from {tAOI_rr_event_begin}*1E+6, 1.0*{I_rr_rev_max}  to {tAOI_rr_event_end}*1E+6, 1.0*{I_rr_rev_max} as 7 back; \
+	set label 1 "50% I_F_M" at {t_rr_50pc_FM_falling}*1E+6, 0.5*{I_rr_fwd_max} point pt 1 ps 2 front right offset -0.5,0.5; \
+	set label 2 "t_0"   at {t_rr_0}*1E+6, 0 point pt 1 ps 2 front right offset -0.5,0.5; \
+	set label 3 "50% I_R_M" at {t_rr_50pc_RM_falling}*1E+6, 0.5*{I_rr_rev_max} point pt 1 ps 2 front right offset -0.5,0.5; \
+	set label 4 "t_R_M"     at {t_rr_RM}*1E+6, {I_rr_rev_max} point pt 1 ps 2 front right offset -0.5,0.5; \
+	set label 5 "90% I_R_M" at {t_rr_90pc_RM_rising}*1E+6, 0.9*{I_rr_rev_max} point pt 1 ps 2 front left offset 0.5,0.5; \
+	set label 6 "25% I_R_M" at {t_rr_25pc_RM_rising}*1E+6, 0.25*{I_rr_rev_max} point pt 1 ps 2 front left offset 0.5,0.5
+	
+        t_rr_0 = 6.632977706398242e-07
+        t_rr_25pc_RM_rising = 7.6e-07
+        t_rr_50pc_FM_falling = 6.254874069215216e-07
+        t_rr_50pc_RM_falling = 6.775838332118575e-07
+        t_rr_90pc_RM_rising = 7.101908927022045e-07
+        t_rr_RM = 7.020616493194556e-07	
+	
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
 {insertion_before_plot}

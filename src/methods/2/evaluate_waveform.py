@@ -70,13 +70,43 @@ class analysisProcessor:
 	def extract_rr_timing_markers(self):
 		d = self.data
 		
-		points = d.CH[d.par['CH_ID']].sorted_points(d.par['tAOI_rr_event'])
-		threshold = 0.9 * d.res['I_rr_rev_max']
-		points_bisect_idx = next(idx for idx, item in enumerate(points) if item[1] > threshold)
-		points_rm = points[0:points_bisect_idx]
+		d.res['t_rr_50pc_FM_falling'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = d.par['tAOI_rr_event'],
+			level = 0.5 * d.res['I_rr_fwd_max'],
+			edge  = 'falling',
+			t_edge = 10E-9
+			)[0]
+		d.res['t_rr_0'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = d.par['tAOI_rr_event'],
+			level = 0,
+			edge  = 'falling',
+			t_edge = 10E-9
+			)[0]
+		d.res['t_rr_50pc_RM_falling'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = d.par['tAOI_rr_event'],
+			level = 0.5 * d.res['I_rr_rev_max'],
+			edge  = 'falling',
+			t_edge = 10E-9
+			)[0]
 		
-		print(points_rm)
-		return
+		reverse_max_y_range = [1.0 * d.res['I_rr_rev_max'], 0.9 * d.res['I_rr_rev_max']]
+		points_around_rm = d.CH[d.par['CH_ID']].sorted_samples_in_rect(d.par['tAOI_rr_event'], reverse_max_y_range)
+		d.res['t_rr_RM'] = np.average(points_around_rm[:,0])
+
+		
+		d.res['t_rr_90pc_RM_rising'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = [d.res['t_rr_RM'], d.par['tAOI_rr_event'][1]],
+			level = 0.9 * d.res['I_rr_rev_max'],
+			edge  = 'rising',
+			t_edge = 10E-9
+			)[0]
+			
+		d.res['t_rr_25pc_RM_rising'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = [d.res['t_rr_RM'], d.par['tAOI_rr_event'][1]],
+			level = 0.25 * d.res['I_rr_rev_max'],
+			edge  = 'rising',
+			)[0]
+
 		
 		
 	def calculate_rr_characteristics(self):
