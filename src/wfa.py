@@ -67,7 +67,7 @@ class WaveformAnalyzer:
 		y = self.s[round(sAOI[0]):round(sAOI[1])]
 		x = self.samples_t(tAOI, len(y))
 		indices = np.argsort(y)
-		return list(zip(x[indices],y[indices])) 		
+		return np.array(list(zip(x[indices],y[indices]))) 		
 		
 		
 	def sorted_samples(self, tAOI):

@@ -75,7 +75,7 @@ class analysisProcessor:
 		points_bisect_idx = next(idx for idx, item in enumerate(points) if item[1] > threshold)
 		points_rm = points[0:points_bisect_idx]
 		
-		print(points)
+		print(points_rm)
 		return
 		
 		
