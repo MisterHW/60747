@@ -41,12 +41,10 @@ class analysisProcessor:
 		self.data.args = args
 		self.output_table_line_template = \
 			'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
-			'{V_CE_turnoff};{V_DC};{Ipk_turnoff};{Temp.};{RG};{V_GE_high};{V_GE_low};' + \
-			'{turn_off_t1};{turn_off_t2};{turn_off_t3};{turn_off_t4};{turn_on_t1};{turn_on_t2};{turn_on_t3};{turn_on_t4};' + \
-			'{E_turnoff_J};{E_turnon_J};{turn_off_t3};{turn_off_t4};' + \
-			'{I_droop_during_pause};'	
+			'{Temp.};{RG};{V_DC_1st_on_av};{V_D_1st_fr_peak};{V_D_1st_on_av};{I_1st_fr_peak};{I_1st_fr_peak_lin_estimate};{I_rr_fwd_max};{I_rr_fwd_lin_estimate};{I_rr_rev_max};{};' + \
+			'{t_rr_50pc_FM_falling};{t_rr_0};{t_rr_50pc_RM_falling};{t_rr_RM};{t_rr_90pc_RM_rising};{t_rr_25pc_RM_rising};' 
 		self.plotfile_template = same_path_as_script('../../setups/%s/gnuplot_template.plt' % args.setup)
-		
+
 	
 	def extract_voltage_and_current_values(self):
 		d = self.data
