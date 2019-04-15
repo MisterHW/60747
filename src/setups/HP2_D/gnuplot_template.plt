@@ -35,7 +35,7 @@ set format x2 ""
 set format y2 ""
 set y2tics ("0" 0) out
 
-decimation = 2
+decimation = 1
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6
 set xrange [-t_offset_us:t_offset_us]
 
@@ -90,24 +90,27 @@ if(annotation == 5) \
 	set label 1 "50% I_F_M" at {t_rr_50pc_FM_falling}*1E+6, 0.5*{I_rr_fwd_max} point pt 1 ps 2 front right offset -0.5,0.5; \
 	set label 2 "t_0"   at {t_rr_0}*1E+6, 0 point pt 1 ps 2 front right offset -0.5,0.5; \
 	set label 3 "50% I_R_M" at {t_rr_50pc_RM_falling}*1E+6, 0.5*{I_rr_rev_max} point pt 1 ps 2 front right offset -0.5,0.5; \
-	set label 4 "t_R_M"     at {t_rr_RM}*1E+6, {I_rr_rev_max} point pt 1 ps 2 front right offset -0.5,0.5; \
+	set label 4 "t_R_M"     at {t_rr_RM}*1E+6, {I_rr_rev_max} point pt 1 ps 2 front center offset 0,-0.75; \
 	set label 5 "90% I_R_M" at {t_rr_90pc_RM_rising}*1E+6, 0.9*{I_rr_rev_max} point pt 1 ps 2 front left offset 0.5,0.5; \
-	set label 6 "25% I_R_M" at {t_rr_25pc_RM_rising}*1E+6, 0.25*{I_rr_rev_max} point pt 1 ps 2 front left offset 0.5,0.5
-	
-        t_rr_0 = 6.632977706398242e-07
-        t_rr_25pc_RM_rising = 7.6e-07
-        t_rr_50pc_FM_falling = 6.254874069215216e-07
-        t_rr_50pc_RM_falling = 6.775838332118575e-07
-        t_rr_90pc_RM_rising = 7.101908927022045e-07
-        t_rr_RM = 7.020616493194556e-07	
+	set label 6 "25% I_R_M" at {t_rr_25pc_RM_rising}*1E+6, 0.25*{I_rr_rev_max} point pt 1 ps 2 front left offset 0.5,0.5; \
+	set label 7 "t_r_r_,_e_n_d" at {t_rr_1_90_25}*1E+6, 0 point pt 1 ps 2 front left rotate by 45; \
+	set label 8 "t_i_,_e_n_d" at {t_rr_int_end}*1E+6, 0 point pt 1 ps 2 front left rotate by 45; \
+	set arrow from {t_rr_90pc_RM_rising}*1E+6, 0.9*{I_rr_rev_max}  to {t_rr_1_90_25}*1E+6, 0 as 7 back
+
 	
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
+filter(t,min,max,y_in, y_out) = (t > min && t < max) ? y_in : y_out
+
 {insertion_before_plot}
 plot \
 	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):( column({CH_VDC}+1)) every decimation w l lw 2 t "V_D_C",\
 	fn skip headerlines u ($0*{TS_VD} *1E+6 * decimation - t_offset_us):( column({CH_VD}+1)) every decimation w l lw 2 t "V_D",\
-	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID}+1)) every decimation w l lw 2 t "I_D"
+	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID}+1)) every decimation w l lw 2 t "I_D",\
+	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID}+1)):( \
+		filter(($0*{TS_ID} *1E+6 * decimation - t_offset_us), {t_rr_0}*1E+6, {t_rr_int_end}*1E+6, 0.0, -column({CH_ID}+1)) \
+		) every decimation with filledcurves fs transparent solid 0.50 lc rgb "gold" 
+		
 {insertion_after_plot}
  
 	 

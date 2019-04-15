@@ -72,19 +72,19 @@ class analysisProcessor:
 			tAOI  = d.par['tAOI_rr_event'],
 			level = 0.5 * d.res['I_rr_fwd_max'],
 			edge  = 'falling',
-			t_edge = 10E-9
+			t_edge = 5E-9
 			)[0]
 		d.res['t_rr_0'] = d.CH[d.par['CH_ID']].find_level_crossing(
 			tAOI  = d.par['tAOI_rr_event'],
 			level = 0,
 			edge  = 'falling',
-			t_edge = 10E-9
+			t_edge = 5E-9
 			)[0]
 		d.res['t_rr_50pc_RM_falling'] = d.CH[d.par['CH_ID']].find_level_crossing(
 			tAOI  = d.par['tAOI_rr_event'],
 			level = 0.5 * d.res['I_rr_rev_max'],
 			edge  = 'falling',
-			t_edge = 10E-9
+			t_edge = 5E-9
 			)[0]
 		
 		reverse_max_y_range = [1.0 * d.res['I_rr_rev_max'], 0.9 * d.res['I_rr_rev_max']]
@@ -96,7 +96,6 @@ class analysisProcessor:
 			tAOI  = [d.res['t_rr_RM'], d.par['tAOI_rr_event'][1]],
 			level = 0.9 * d.res['I_rr_rev_max'],
 			edge  = 'rising',
-			t_edge = 10E-9
 			)[0]
 			
 		d.res['t_rr_50pc_RM_rising'] = d.CH[d.par['CH_ID']].find_level_crossing(
@@ -110,6 +109,19 @@ class analysisProcessor:
 			level = 0.25 * d.res['I_rr_rev_max'],
 			edge  = 'rising',
 			)[0]
+			
+		assert d.res['t_rr_90pc_RM_rising'] < d.res['t_rr_25pc_RM_rising'], "Error: t_rr_90pc_RM_rising >= t_rr_25pc_RM_rising."
+		dirrf_dt = (0.9-0.25)*d.res['I_rr_rev_max'] / (d.res['t_rr_90pc_RM_rising'] - d.res['t_rr_25pc_RM_rising'])
+		d.res['rr_rising_edge_nom_90_25'] = [
+			0.9 * d.res['I_rr_rev_max'] - d.res['t_rr_90pc_RM_rising'] * dirrf_dt, 
+			dirrf_dt]
+		inv_rr_rising_edge_nom_90_25 = \
+			lambda I, \
+			a = d.res['rr_rising_edge_nom_90_25'][0], \
+			b = d.res['rr_rising_edge_nom_90_25'][1] \
+			: [(I - a) / b, I]
+			
+		d.res['t_rr_1_90_25'] = inv_rr_rising_edge_nom_90_25(0.0)[0]
 				
 		
 	def calculate_rr_characteristics(self):
@@ -131,8 +143,12 @@ class analysisProcessor:
 		
 		# falling-edge transition fit from 50% I_FM to 50% I_RM points
 		# the value t_rr_0_lin is the intersection with I = 0 and should be compatible with t_rr_0
+		# which will be tested
 		rr_falling_edge = d.CH[d.par['CH_ID']].lin_fit(
 			[d.res['t_rr_50pc_FM_falling'], d.res['t_rr_50pc_RM_falling']] )
+		rr_falling_edge_neg = d.CH[d.par['CH_ID']].lin_fit(
+			[d.res['t_rr_0'], d.res['t_rr_50pc_RM_falling']] )
+		reconstruct_t_rr_50pc_FM_falling = False
 		if rr_falling_edge[0] == None:
 			print("Error: rr_falling_edge fit failed.")
 			d.err.update(fwddecl)
@@ -141,9 +157,23 @@ class analysisProcessor:
 			d.res['rr_falling_edge'] = rr_falling_edge
 			fwddecl.pop('rr_falling_edge')
 			
+			if rr_falling_edge_neg[0] == None:
+				print("\tWarning: rr_falling_edge_neg edge fit failed - cannot verify rr_falling_edge against rr_falling_edge_neg.")
+			else:
+				if not 0.9 < (rr_falling_edge[1]/rr_falling_edge_neg[1]) < 1.1:
+					print("\tWarning: rr_falling_edge instability - reverting from [t(0.5I_FM);t(0.5I_RM)] to [t0;t(0.5I_RM)].")
+					reconstruct_t_rr_50pc_FM_falling = True
+					d.res['rr_falling_edge']  = rr_falling_edge_neg
+			
+			
 		I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
 		inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
 		t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
+		if reconstruct_t_rr_50pc_FM_falling:
+			t_rr_50pc_FM_falling_new = inv_rr_falling_edge(0.5 * d.res['I_rr_fwd_max'])[0]
+			print("\tInfo: changing t_rr_50pc_FM_falling from %g to %g." % (d.res['t_rr_50pc_FM_falling'], t_rr_50pc_FM_falling_new))
+			d.res['t_rr_50pc_FM_falling'] = t_rr_50pc_FM_falling_new
+		
 		if not (d.par['tAOI_rr_event'][0] < t_rr_0_lin < d.res['t_rr_RM']):
 			print("Error: t_rr_0_lin did not evaluate to a value within [tAOI_rr_event;t_rr_RM]")
 			d.err.update(fwddecl)
@@ -160,7 +190,7 @@ class analysisProcessor:
 		I_rr_rising_edge_90_25   = lambda t, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [t, a + b*t]
 		inv_rr_rising_edge_90_25 = lambda I, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [(I - a) / b, I]
 		d.res['t_rr_1_lin_90_25'] = inv_rr_rising_edge_90_25(0.0)[0]
-		d.res['RRSF'] = d.res['rr_rising_edge_90_25'][1] / d.res['rr_falling_edge'][1] 
+		d.res['RRSF'] = -d.res['rr_rising_edge_90_25'][1] / d.res['rr_falling_edge'][1] 
 		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * (d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0'])
 		d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0]
 		
