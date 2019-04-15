@@ -50,21 +50,26 @@ class WaveformAnalyzer:
 		return self.smp_to_time([0,len(self.s)-1])
 		
 		
-	def waveform_integral(self, tAOI):
-		sAOI = self.time_to_smp(tAOI)
+	def sum(self, tAOI):
+		sAOI = list(map(lambda x: int(round(x)), self.time_to_smp(tAOI)))
+		tAOI_adj = self.smp_to_time(sAOI)
 		nsmp = sAOI[1] - sAOI[0] + 1
-		av = np.sum(self.s[round(sAOI[0]):round(sAOI[1])])
-		return [av, nsmp]
-
+		wfmsum = np.sum(self.s[sAOI[0]:sAOI[1]])
+		return [wfmsum, nsmp, tAOI_adj[0], tAOI_adj[1]]
+		
 		
 	def average(self, tAOI):
-		av, nsmp = self.waveform_integral(tAOI)
-		return [av/nsmp, nsmp]
+		wfmsum, nsmp, t_begin, t_end = self.sum(tAOI)
+		return [wfmsum/nsmp, nsmp, t_begin, t_end]
+		
+	def integral(self, tAOI):
+		wfmsum, nsmp, t_begin, t_end = self.sum(tAOI)
+		return [wfmsum*(t_end - t_begin)/nsmp, nsmp, t_begin, t_end]
 		
 		
 	def sorted_points(self, tAOI):
 		sAOI = self.time_to_smp(tAOI)
-		y = self.s[round(sAOI[0]):round(sAOI[1])]
+		y = self.s[int(round(sAOI[0])):int(round(sAOI[1]))]
 		x = self.samples_t(tAOI, len(y))
 		indices = np.argsort(y)
 		return np.array(list(zip(x[indices],y[indices]))) 		
@@ -102,7 +107,7 @@ class WaveformAnalyzer:
 		if nsmp < 0:
 			raise ValueError("nsmp < 0")
 			return []
-		sAOI = list(map(round, self.time_to_smp(tAOI)))
+		sAOI = list(map(lambda x:int(round(x)), self.time_to_smp(tAOI)))
 		if nsmp == 0:
 			nsmp = sAOI[1] - sAOI[0] + 1
 		return np.linspace(start = tAOI[0], stop = tAOI[1] , num = nsmp)
@@ -110,7 +115,7 @@ class WaveformAnalyzer:
 		
 	def lin_fit(self, tAOI):
 		a, b, success = 0, 0, False # polynomial coefficients for p(x) * a + b*x and success result
-		sAOI = list(map(round, self.time_to_smp(tAOI)))
+		sAOI = list(map(lambda x:int(round(x)), self.time_to_smp(tAOI)))
 		s_y = self.s[int(sAOI[0]):int(sAOI[1])+1]
 		nsmp = len(s_y)
 		if nsmp > 1:

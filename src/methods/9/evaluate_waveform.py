@@ -144,7 +144,6 @@ class analysisProcessor:
 			d.err['turn_off_t4'] = np.nan
 			d.err['turn_off_t4_slope'] = np.nan
 		else:
-
 			d.res['turn_off_t4'] = t_off_t4[0]
 			d.res['turn_off_t4_slope'] = t_off_t4[1]
 			

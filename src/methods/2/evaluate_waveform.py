@@ -99,17 +99,89 @@ class analysisProcessor:
 			t_edge = 10E-9
 			)[0]
 			
+		d.res['t_rr_50pc_RM_rising'] = d.CH[d.par['CH_ID']].find_level_crossing(
+			tAOI  = [d.res['t_rr_RM'], d.par['tAOI_rr_event'][1]],
+			level = 0.5 * d.res['I_rr_rev_max'],
+			edge  = 'rising',
+			)[0]
+			
 		d.res['t_rr_25pc_RM_rising'] = d.CH[d.par['CH_ID']].find_level_crossing(
 			tAOI  = [d.res['t_rr_RM'], d.par['tAOI_rr_event'][1]],
 			level = 0.25 * d.res['I_rr_rev_max'],
 			edge  = 'rising',
 			)[0]
-
-		
+				
 		
 	def calculate_rr_characteristics(self):
-		# TODO
-		return
+		d = self.data
+		fwddecl = {key:np.nan for key in [
+			'rr_falling_edge', 
+			'rr_rising_edge_90_25',
+			'rr_rising_edge_90_50',
+			'rr_rising_edge_50_25',
+			'rr_rising_edge_ratio_1',
+			'RRSF',
+			't_rr_0_lin',
+			't_rr_1_lin_90_25',
+			't_rr_1_lin_90_50',
+			't_rr_1_lin_50_25',
+			't_rr_int_end',
+			'Q_rr',
+			]}
+		
+		# falling-edge transition fit from 50% I_FM to 50% I_RM points
+		# the value t_rr_0_lin is the intersection with I = 0 and should be compatible with t_rr_0
+		rr_falling_edge = d.CH[d.par['CH_ID']].lin_fit(
+			[d.res['t_rr_50pc_FM_falling'], d.res['t_rr_50pc_RM_falling']] )
+		if rr_falling_edge[0] == None:
+			print("Error: rr_falling_edge fit failed.")
+			d.err.update(fwddecl)
+			return
+		else:
+			d.res['rr_falling_edge'] = rr_falling_edge
+			fwddecl.pop('rr_falling_edge')
+			
+		I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
+		inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
+		t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
+		if not (d.par['tAOI_rr_event'][0] < t_rr_0_lin < d.res['t_rr_RM']):
+			print("Error: t_rr_0_lin did not evaluate to a value within [tAOI_rr_event;t_rr_RM]")
+			d.err.update(fwddecl)
+			return
+		else:
+			d.res['t_rr_0_lin'] = t_rr_0_lin
+			fwddecl.pop('t_rr_0_lin')		
+		
+		# linear fit on the rising edge after I_RM 
+		# key points are with 90% I_RM and 25% I_RM intersections 
+		# note the linear fit curves will not necessarily be equivalent to a line through the two points
+		d.res['rr_rising_edge_90_25'] = d.CH[d.par['CH_ID']].lin_fit(
+			[d.res['t_rr_90pc_RM_rising'], d.res['t_rr_25pc_RM_rising']] )
+		I_rr_rising_edge_90_25   = lambda t, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [t, a + b*t]
+		inv_rr_rising_edge_90_25 = lambda I, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [(I - a) / b, I]
+		d.res['t_rr_1_lin_90_25'] = inv_rr_rising_edge_90_25(0.0)[0]
+		d.res['RRSF'] = d.res['rr_rising_edge_90_25'][1] / d.res['rr_falling_edge'][1] 
+		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * (d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0'])
+		d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0]
+		
+		# paritioned fits on the rising edge after I_RM - line 1
+		# these are used to quantify the bend in the recovery curve (rr_rising_edge_ratio_1)
+		# key points are with 90% I_RM and 50% I_RM intersections  
+		d.res['rr_rising_edge_90_50'] = d.CH[d.par['CH_ID']].lin_fit(
+			[d.res['t_rr_90pc_RM_rising'], d.res['t_rr_50pc_RM_rising']] )
+		I_rr_rising_edge_90_50   = lambda t, a=d.res['rr_rising_edge_90_50'][0], b=d.res['rr_rising_edge_90_50'][1] : [t, a + b*t]
+		inv_rr_rising_edge_90_50 = lambda I, a=d.res['rr_rising_edge_90_50'][0], b=d.res['rr_rising_edge_90_50'][1] : [(I - a) / b, I]
+		d.res['t_rr_1_lin_90_50'] = inv_rr_rising_edge_90_50(0.0)[0]
+		
+		# paritioned fits on the rising edge after I_RM - line 2
+		# key points are with 50% I_RM and 25% I_RM intersections  
+		d.res['rr_rising_edge_50_25'] = d.CH[d.par['CH_ID']].lin_fit(
+			[d.res['t_rr_50pc_RM_rising'], d.res['t_rr_25pc_RM_rising']] )
+		I_rr_rising_edge_50_25   = lambda t, a=d.res['rr_rising_edge_50_25'][0], b=d.res['rr_rising_edge_50_25'][1] : [t, a + b*t]
+		inv_rr_rising_edge_50_25 = lambda I, a=d.res['rr_rising_edge_50_25'][0], b=d.res['rr_rising_edge_50_25'][1] : [(I - a) / b, I]
+		d.res['t_rr_1_lin_50_25'] = inv_rr_rising_edge_50_25(0.0)[0]
+		
+		d.res['rr_rising_edge_ratio_1'] = d.res['rr_rising_edge_50_25'][1] / d.res['rr_rising_edge_90_50'][1] 
 		
 			
 	def print_assertion_error(self, error, full_info = False):
@@ -119,7 +191,6 @@ class analysisProcessor:
 			visualize_output(purge_unresolved_placeholders = True)
 			print('=============================================\n\n')	
 
-			
 		
 	def store_header(self, fn):
 		line = self.output_table_line_template.replace('"{','"').replace('}"','"').replace('{','"').replace('}','"') + '\n'
