@@ -41,8 +41,8 @@ class analysisProcessor:
 		self.data.args = args
 		self.output_table_line_template = \
 			'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
-			'{Temp.};{RG};{V_DC_1st_on_av};{V_D_1st_fr_peak};{V_D_1st_on_av};{I_1st_fr_peak};{I_1st_fr_peak_lin_estimate};{I_rr_fwd_max};{I_rr_fwd_lin_estimate};{I_rr_rev_max};{};' + \
-			'{t_rr_50pc_FM_falling};{t_rr_0};{t_rr_50pc_RM_falling};{t_rr_RM};{t_rr_90pc_RM_rising};{t_rr_25pc_RM_rising};' 
+			'{Temp.};{V_DC_1st_on_av};{I_rr_fwd_max};{I_rr_rev_max};{V_D_1st_on_av};' + \
+			'{t_rr};{Q_rr};{E_rr_J};{dI_rr_dt_falling_edge};'
 		self.plotfile_template = same_path_as_script('../../setups/%s/gnuplot_template.plt' % args.setup)
 
 	
@@ -165,7 +165,7 @@ class analysisProcessor:
 					reconstruct_t_rr_50pc_FM_falling = True
 					d.res['rr_falling_edge']  = rr_falling_edge_neg
 			
-			
+		d.res['dI_rr_dt_falling_edge'] = d.res['rr_falling_edge'][1]
 		I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
 		inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
 		t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
@@ -191,8 +191,17 @@ class analysisProcessor:
 		inv_rr_rising_edge_90_25 = lambda I, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [(I - a) / b, I]
 		d.res['t_rr_1_lin_90_25'] = inv_rr_rising_edge_90_25(0.0)[0]
 		d.res['RRSF'] = -d.res['rr_rising_edge_90_25'][1] / d.res['rr_falling_edge'][1] 
-		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * (d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0'])
+		d.res['t_rr'] = d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0']
+		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * d.res['t_rr']
 		d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0]
+		
+		turnoff_prod = wfa.arithmetic_operation(
+			WFA_list = [d.CH[d.par['CH_VD']], d.CH[d.par['CH_ID']]], 
+			tAOI = [d.res['t_rr_0'], d.res['t_rr_int_end']], 
+			func = lambda vals : vals[0] * vals[1],
+			generate_time_coords = True )
+		d.res['E_rr_J'] = -np.trapz(turnoff_prod[1], turnoff_prod[0]) 
+
 		
 		# paritioned fits on the rising edge after I_RM - line 1
 		# these are used to quantify the bend in the recovery curve (rr_rising_edge_ratio_1)
