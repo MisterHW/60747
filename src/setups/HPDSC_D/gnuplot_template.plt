@@ -1,5 +1,5 @@
 reset
-set term wxt enhanced persist
+set term wxt enhanced persist size 1200,800 font 'Verdana,14'
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -19,9 +19,9 @@ t_2nd_pulse_falling = t_zero + t_2nd_pulse
 t_3rd_period_end    = t_zero + t_2nd_pulse_falling + t_delay
 ###
 
-set key box bottom right noautotitle width 1.25
+set key box bottom right noautotitle width 1.25 height 1.25
 set xzeroaxis
-set title "Doppelpulstest: {file_base}" font 'Verdana,14'
+set title "Doppelpulstest: {file_base}" font 'Verdana,16'
 set mxtics 5
 set mytics 5 
 set xtics nomirror

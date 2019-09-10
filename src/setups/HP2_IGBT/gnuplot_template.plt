@@ -1,5 +1,5 @@
 reset
-set term wxt enhanced persist
+set term wxt enhanced persist size 1200,800 font 'Verdana,14'
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -39,9 +39,9 @@ plot tmp
 unset table 
 
 
-set key box top right noautotitle width 1.25
+set key box top right noautotitle width 1.25 height 1.25
 set xzeroaxis
-set title "Doppelpulstest: {file_base}" font 'Verdana,14'
+set title "Doppelpulstest: {file_base}" font 'Verdana,16'
 set mxtics 5
 set mytics 5 
 set xtics nomirror

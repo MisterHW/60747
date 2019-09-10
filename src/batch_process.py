@@ -32,6 +32,7 @@ def init_argparse():
 	parser.add_argument("-s", "--setup", type=str, help="Setup identifier for pre-processing (folder name of a template in setups/)", required=True)	
 	parser.add_argument("-m", "--method", type=str, help="Analysis method identifier (folder name of a template in methods/).", required=True)
 	parser.add_argument("-o", "--outputfilename", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
+	parser.add_argument("-D", "--debug", action='store_true', default=False, help='turns on debugging output and exception reporting.')
 	args = parser.parse_args()
 	
 	
@@ -62,6 +63,7 @@ def process_files(start_dir):
 	
 if __name__ == "__main__":
 	init_argparse()
+	# load evaluate_waveform from subdirectory: methods/<args.method>/evaluate_waveform.py
 	evaluate_waveform = importlib.import_module('methods.%s.evaluate_waveform' % args.method)
 	process_files(args.directory)
 	

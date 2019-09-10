@@ -79,13 +79,21 @@ class WaveformAnalyzer:
 		sAOI = self.time_to_smp(tAOI)
 		return np.sort(self.s[round(sAOI[0]):round(sAOI[1])]) # quicksort ascending		
 		
+	
+	def overlaps(self, tAOI):	
+		sAOI = self.time_to_smp(tAOI)
+		return (sAOI[1] > sAOI[0])
+		
 		
 	def percentile_values(self, tAOI, percentiles):
 		sorted_samples = self.sorted_samples(tAOI)
 		nsmp = len(sorted_samples)
-		vals  = [ sorted_samples[max(0, min(round((nsmp-1)*p), nsmp-1))] for p in percentiles]
-		return vals 
-		
+		if nsmp == 0:
+			print("Error in wfa.percentile_values() : 0 samples in range.")
+			return None
+		else:
+			return [ sorted_samples[max(0, min(round((nsmp-1)*p), nsmp-1))] for p in percentiles ]
+			
 		
 	def samples_in_AOI(self, tAOI):
 		# TODO 

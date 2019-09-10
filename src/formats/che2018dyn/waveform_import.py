@@ -114,7 +114,7 @@ def read_file_header_and_data(filename, analysis_data):
 			timebase_unitstr = 's',
 			id_str           = 'Channel %d' % (n+1)
 		) for n in range(0,analysis_data.par['ndatacols']) ]
-		
+	
 	return True
 	
 	

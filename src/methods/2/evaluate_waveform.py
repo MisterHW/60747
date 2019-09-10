@@ -50,10 +50,16 @@ class analysisProcessor:
 		d = self.data
 		
 		print("\tvoltage and current levels")
+		
 		# extract basic waveform voltages and currents
-
-		d.res['I_1st_fr_peak'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_1st_fr_event'], 0.99)	
-		d.res['V_D_1st_fr_peak'] = d.CH[d.par['CH_VD']].percentile_value(d.par['tAOI_1st_fr_event'], 0.99)	
+		
+		# treat first forward recovery as optional: tAOI_1st_fr_event may lie outside waveform bounds
+		if d.CH[d.par['CH_ID']].overlaps(d.par['tAOI_1st_fr_event']): 
+			d.res['I_1st_fr_peak'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_1st_fr_event'], 0.99)
+		if d.CH[d.par['CH_VD']].overlaps(d.par['tAOI_1st_fr_event']):
+			d.res['V_D_1st_fr_peak'] = d.CH[d.par['CH_VD']].percentile_value(d.par['tAOI_1st_fr_event'], 0.99)	
+		
+		# treat reverse recover as mandatory
 		d.res['V_D_1st_on_av'] = d.CH[d.par['CH_VD']].average(d.par['tAOI_D_FWD'])[0]
 		d.res['V_DC_1st_on_av'] = d.CH[d.par['CH_VDC']].average(d.par['tAOI_D_FWD'])[0]
 		d.res['I_rr_fwd_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.98)
@@ -316,7 +322,7 @@ class analysisProcessor:
 	
 		result = False
 		
-		headerlines = 22 # TODO: 
+		headerlines = 22 # TODO: auto-detect / verify headerlines
 		self.data.par['header_rows'] = headerlines
 		
 		if waveform_import.read_file_header_and_data(filename, self.data):
@@ -328,7 +334,14 @@ class analysisProcessor:
 			except AssertionError as e:
 				self.print_assertion_error(e)
 				return result
-
+			except Exception as e:
+				print("\nError: %s\n" % str(e))
+				print("\nDebug info:")
+				self.print_params_and_results()
+				if self.data.args.debug: 
+					raise e
+				return result
+			
 			result = True
 			
 			try: 
@@ -337,6 +350,13 @@ class analysisProcessor:
 			except AssertionError as e:
 				result = False
 				self.print_assertion_error(e)
+			except Exception as e:
+				result = False
+				print("\nError: %s\n" % str(e))
+				print("\nDebug info:")
+				self.print_params_and_results()
+				if self.data.args.debug: 
+					raise e
 				
 			self.data.res['success'] = int(len(self.data.err) == 0) # 1: success, 0: errors occured.
 			self.visualize_output(purge_unresolved_placeholders = True)
@@ -347,13 +367,15 @@ class analysisProcessor:
 		
 	def process_file(self, filename):
 		global waveform_import, preprocess_data
+		# load evaluate_waveform from subdirectory: formats/<args.inputformat>/waveform_import.py
 		waveform_import   = importlib.import_module('formats.%s.waveform_import' % self.data.args.inputformat)
+		# load evaluate_waveform from subdirectory: setups/<args.setup>/preprocess_data.py
 		preprocess_data   = importlib.import_module('setups.%s.preprocess_data'  % self.data.args.setup)
 		
 		print("processing:\n\t'%s'" % filename)
 		
 		preprocess_data.assign_basic_analysis_parameters(self.data)
-
+		
 		result = self.__process_file(filename)
 			
 		print("")
