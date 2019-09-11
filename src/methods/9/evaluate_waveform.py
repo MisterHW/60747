@@ -199,12 +199,12 @@ class analysisProcessor:
 			d.res['turn_on_t3'] = t_on_t3[0]
 			d.res['turn_on_t3_slope'] = t_on_t3[1]
 			
-		# turn-on marker 4: V_CE_corr = 0.02 * V_DC
+		# turn-on marker 4: typically V_CE_corr = 0.02 * V_DC as per 60747-9, see d.par['DET_turn_on_t4_fraction']
 		t_on_t4 = d.CH[d.par['CH_VCE_corr']].find_level_crossing(
 			tAOI  = d.par['tAOI_turn_on_bounds'],
-			level = 0.02 * d.res['V_DC'],
+			level = d.par['DET_turn_on_t4_fraction'] * d.res['V_DC'], 
 			edge  = 'falling',
-			t_edge= 6E-9 )	
+			t_edge= d.par['DET_turn_on_t4_refinement_time'] )	
 		if t_on_t4[0] == None: 
 			print('Error: failed to evaluate turn_on_t4 marker in range %s' % repr(d.par['tAOI_turn_on_bounds']))
 			d.err['turn_on_t4'] = np.nan

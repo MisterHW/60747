@@ -63,7 +63,7 @@ set obj rect from {tAOI_turn_on_bounds_begin}*1E+6 , graph 0 to {tAOI_turn_on_bo
 # set x2tics add ("" -1E+6) # catch element for tics at NaN (workaround for "add_tic_user: list sort error")
 
 if (!isNaN({turn_off_t1})){\
-	set label 1 "90% V_G_E" at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front rotate by 45; \
+	set label 1 "90% V_G_E " at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front right offset 0,0 rotate by -45; \
 	set x2tics add ("A" {turn_off_t1}*1E+6)}
 if (!isNaN({turn_off_t2})){\
 	set label 2 "90% I_p_k" at {turn_off_t2}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
@@ -72,11 +72,11 @@ if (!isNaN({turn_off_t3})){\
 	set label 3 "10% I_p_k" at {turn_off_t3}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
 	set x2tics add ("C" {turn_off_t3}*1E+6)} 
 if (!isNaN({turn_off_t4})){\
-	set label 4 "2% I_p_k" at {turn_off_t4}*1E+6, 0.02*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
+	set label 4 "2% I_p_k" at {turn_off_t4}*1E+6, 0.02*{Ipk_turnoff} point pt 1 ps 2 front; \
 	set x2tics add ("D" {turn_off_t4}*1E+6)}
 
 if (!isNaN({turn_on_t1})){\
-	set label 5 "10% V_G_E" at {turn_on_t1}*1E+6, 0.1*{V_GE_high} point pt 1 ps 2 front rotate by 45; \
+	set label 5 "10% V_G_E " at {turn_on_t1}*1E+6, 0.1*{V_GE_high} point pt 1 ps 2 front right offset 0,0 rotate by -45; \
 	set x2tics add ("E" {turn_on_t1}*1E+6)}
 if (!isNaN({turn_on_t2})){\
 	set label 6 "10% I_p_k" at {turn_on_t2}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
@@ -85,7 +85,7 @@ if (!isNaN({turn_on_t3})){\
 	set label 7 "90% I_p_k" at {turn_on_t3}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
 	set x2tics add ("G" {turn_on_t3}*1E+6)}
 if (!isNaN({turn_on_t4})){\
-	set label 8 "2% V_D_C" at {turn_on_t4}*1E+6, 0.02*{V_DC} point pt 1 ps 2 front rotate by 45; \
+	set label 8 sprintf("%.1f%% V_D_C",{DET_turn_on_t4_fraction}*100) at {turn_on_t4}*1E+6, {DET_turn_on_t4_fraction}*{V_DC} point pt 1 ps 2 front; \
 	set x2tics add ("H" {turn_on_t4}*1E+6)}
 
 

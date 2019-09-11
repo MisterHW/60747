@@ -18,6 +18,14 @@ def assign_basic_analysis_parameters(analysis_data):
 	d.par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
 	d.par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
 	
+	### detection parameters
+	# 60747-9 calls for 0.02 (2% V_CE) which however excludes low voltage measurements.
+	# Note high V_CE due to incomplete turn-on needs to be looked at separately and is not quantified by threshold crossing.
+	d.par['DET_turn_on_t4_fraction'] = 0.05 
+	# A more accurate intersection can be obtained by regression analysis over a fraction of some measure of the transition time.
+	# This value is technology-, voltage- and temperature-dependent and 
+	d.par['DET_turn_on_t4_refinement_time'] = 200E-9 
+	
 	
 def assign_advanced_analysis_parameters(analysis_data):
 	d = analysis_data
