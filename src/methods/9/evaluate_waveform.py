@@ -110,7 +110,8 @@ class analysisProcessor:
 			tAOI  = d.par['tAOI_turn_off_bounds'],
 			level = 0.9 * d.res['Ipk_turnoff'],
 			edge  = 'falling',
-			t_edge= 10E-9 )	
+			t_edge= 10E-9,
+			right_to_left = True)	
 		if t_off_t2[0] == None: 
 			print('Error: failed to evaluate turn_off_t2 marker in range %s' % repr(d.par['tAOI_turn_off_bounds']))
 			d.err['turn_off_t2'] = np.nan
@@ -200,6 +201,7 @@ class analysisProcessor:
 			d.res['turn_on_t3_slope'] = t_on_t3[1]
 			
 		# turn-on marker 4: typically V_CE_corr = 0.02 * V_DC as per 60747-9, see d.par['DET_turn_on_t4_fraction']
+		print("determining t_on_t4:")
 		t_on_t4 = d.CH[d.par['CH_VCE_corr']].find_level_crossing(
 			tAOI  = d.par['tAOI_turn_on_bounds'],
 			level = d.par['DET_turn_on_t4_fraction'] * d.res['V_DC'], 

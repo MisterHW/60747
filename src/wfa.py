@@ -144,7 +144,7 @@ class WaveformAnalyzer:
 		return [a,b, success]
 		
 		
-	def find_level_crossing(self, tAOI, level, edge='both', t_edge=0):
+	def find_level_crossing(self, tAOI, level, edge='both', t_edge=0, right_to_left = False):
 		### find level crossing through <edge> within a <time AOI> region
 		edge_both = edge != 'rising' and edge != 'falling'
 		# t_edge helps define the minimum number of samples for threshold detection
@@ -159,17 +159,21 @@ class WaveformAnalyzer:
 		# see http://chamilo2.grenet.fr/inp/courses/ENSE3A35EMIAAZ0/document/change_detection.pdf
 		prelim_trig_x = None # index of element at level crossing
 		threshold = np.full((1,len(s_y)), level)
-		s_y_above = np.greater(s_y, threshold)
+		s_y_above = np.greater(s_y, threshold)[0].tolist()
+
 		changed_state = None 
 		if edge_both:
-			changed_state = not s_y_above[0]
+			changed_state = not s_y_above
 		if edge == 'rising':
 			changed_state = True
 		if edge == 'falling':
 			changed_state = False
 		try:
-			prelim_trig_x = s_y_above.tolist()[0].index(changed_state) - 1
-		except:
+			if right_to_left:
+				prelim_trig_x = (len(s_y_above) - 1) - s_y_above.reverse().index(changed_state) - 1
+			else:
+				prelim_trig_x = s_y_above.index(changed_state) - 1
+		except ValueError:
 			# error: no transition found
 			return [None, 0]
 		
@@ -182,6 +186,7 @@ class WaveformAnalyzer:
 			fitres = self.lin_fit(tAOI_fit)
 			if fitres[2] == False:
 				# error: fit failed
+				print('Error in find_level_crossing(): fit failed.')
 				return [None, 0]
 			if abs(fitres[1]) < 1E-6:
 				print('Warning: in find_level_crossing(): horizontal fit detected - refinement may be unstable.')
@@ -190,13 +195,13 @@ class WaveformAnalyzer:
 			t_refined = (level - fitres[0])/fitres[1]
 			dydt_refined = fitres[1]
 			
-			if abs(t_refined - t) < 5 * t_edge:
+			if abs(t_refined - t) < t_edge:
 				# note: since tau_samples > 2, t_edge is already > 0
 				# print('find_level_crossing: adjusting position by %g' % (t_refined - t))
 				t = t_refined
 				dydt = dydt_refined
 			else:	
-				print('Warning: in find_level_crossing(): refined value %g out of bounds: %g +/- %g. Defaulting to previous (integer) sample position.' % (t_refined, t, 5*t_edge))
+				print('Warning: in find_level_crossing(): refined value %g out of bounds: %g +/- %g. Defaulting to previous (integer) sample position.' % (t_refined, t, t_edge))
 
 		# print('find_level_crossing result:', [t, dydt]) # DEBUG 
 		return [t, dydt]
