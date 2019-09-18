@@ -170,7 +170,8 @@ class WaveformAnalyzer:
 			changed_state = False
 		try:
 			if right_to_left:
-				prelim_trig_x = (len(s_y_above) - 1) - s_y_above.reverse().index(changed_state) - 1
+				s_y_above.reverse()
+				prelim_trig_x = (len(s_y_above) - 1) - s_y_above.index(not changed_state) - 1
 			else:
 				prelim_trig_x = s_y_above.index(changed_state) - 1
 		except ValueError:

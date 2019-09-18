@@ -43,7 +43,9 @@ class analysisProcessor:
 			'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
 			'{Temp.};{V_DC_1st_on_av};{I_rr_fwd_max};{I_rr_rev_max};{V_D_1st_on_av};' + \
 			'{t_rr};{Q_rr};{E_rr_J};{dI_rr_dt_falling_edge};{RRSF_tbta};{RRSF_dIdt};'
-		self.plotfile_template = same_path_as_script('../../setups/%s/gnuplot_template.plt' % args.setup)
+		if self.data.args.plotfile is not None:
+			plotfile = self.data.args.plotfile
+		self.plotfile_template = same_path_as_script('../../setups/%s/%s' % (self.data.args.setup, plotfile))
 
 	
 	def extract_voltage_and_current_values(self):
@@ -195,10 +197,8 @@ class analysisProcessor:
 			[d.res['t_rr_90pc_RM_rising'], d.res['t_rr_25pc_RM_rising']] )
 		I_rr_rising_edge_90_25   = lambda t, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [t, a + b*t]
 		inv_rr_rising_edge_90_25 = lambda I, a=d.res['rr_rising_edge_90_25'][0], b=d.res['rr_rising_edge_90_25'][1] : [(I - a) / b, I]
-		
-		d.res['t_rr_1_lin_90_25'] = inv_rr_rising_edge_90_25(0.0)[0]
-		d.res['RRSF_dIdt'] = -d.res['rr_falling_edge'][1] / d.res['rr_rising_edge_90_25'][1] # dIrr/dt / dIrf/dt
-		d.res['RRSF_tbta'] = (d.res['t_rr_1_lin_90_25'] - d.res['t_rr_RM']) / (d.res['t_rr_RM'] - d.res['t_rr_0_lin']) # trrf / trrr		
+		d.res['t_rr_1_lin_90_25'] = inv_rr_rising_edge_90_25(0.0)[0]	
+			
 		d.res['t_rr'] = d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0']
 		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * d.res['t_rr']
 		d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0]
@@ -228,9 +228,12 @@ class analysisProcessor:
 		inv_rr_rising_edge_50_25 = lambda I, a=d.res['rr_rising_edge_50_25'][0], b=d.res['rr_rising_edge_50_25'][1] : [(I - a) / b, I]
 		d.res['t_rr_1_lin_50_25'] = inv_rr_rising_edge_50_25(0.0)[0]
 		
-		d.res['rr_rising_edge_ratio_1'] = d.res['rr_rising_edge_50_25'][1] / d.res['rr_rising_edge_90_50'][1] 
 		
-			
+		d.res['RRSF_dIdt'] = -d.res['rr_falling_edge'][1] / d.res['rr_rising_edge_90_50'][1] # dIrr/dt / dIrf/dt
+		d.res['RRSF_tbta'] = (d.res['t_rr_1_lin_90_50'] - d.res['t_rr_RM']) / (d.res['t_rr_RM'] - d.res['t_rr_0_lin']) # trrf / trrr			
+		d.res['rr_rising_edge_ratio_1'] = d.res['rr_rising_edge_50_25'][1] / d.res['rr_rising_edge_90_50'][1] 
+
+		
 	def print_assertion_error(self, error, full_info = False):
 		print('\n\nAssertionError: ', error)
 		if full_info:
@@ -251,7 +254,7 @@ class analysisProcessor:
 
 
 	def store_results(self, fn):
-		line = self.resolve_placeholders(self.output_table_line_template) + '\n'
+		line = self.resolve_placeholders(self.output_table_line_template, purge_unresolved = True) + '\n'
 		if fn == None:
 			print(line)
 		else:
@@ -274,7 +277,7 @@ class analysisProcessor:
 			s = s.replace('{%s}'%key, str(d.err[key]))	
 		if purge_unresolved:
 			placeholder_pattern = r'\{[^\}\/\\]*\}' # match "{text}" pattern except when text contains \ (gnuplot multiline) or / (gnuplot {/:bold ....} )
-			s = re.sub(placeholder_pattern, '(nan)',s)
+			s = re.sub(placeholder_pattern, 'nan',s)
 		return s
 			
 		
@@ -361,7 +364,8 @@ class analysisProcessor:
 					raise e
 				
 			self.data.res['success'] = int(len(self.data.err) == 0) # 1: success, 0: errors occured.
-			self.visualize_output(purge_unresolved_placeholders = True)
+			if self.data.args.noplot is None:
+				self.visualize_output(purge_unresolved_placeholders = True)
 			
 		print("")
 		return result

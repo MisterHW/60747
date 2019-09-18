@@ -24,7 +24,7 @@ def assign_basic_analysis_parameters(analysis_data):
 	d.par['DET_turn_on_t4_fraction'] = 0.05 
 	# A more accurate intersection can be obtained by regression analysis over a fraction of some measure of the transition time.
 	# This value is technology-, voltage- and temperature-dependent and 
-	d.par['DET_turn_on_t4_refinement_time'] = 200E-9 
+	d.par['DET_turn_on_t4_refinement_time'] = 50E-9 
 	
 	
 def assign_advanced_analysis_parameters(analysis_data):

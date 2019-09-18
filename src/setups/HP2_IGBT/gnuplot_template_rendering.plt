@@ -1,5 +1,5 @@
 reset
-set term wxt enhanced size 1200,800 font 'Verdana,14' persist
+set term png enhanced size 1200,800
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -53,14 +53,11 @@ set format x2 ""
 
 decimation = 2
 t_offset_us = {TS_VDC}*{n_samples} * 0.5 * 1E+6
-set xrange [-t_offset_us:t_offset_us]
-set x2range [-t_offset_us:t_offset_us]
 
 set style rect fc lt -1 fs transparent solid 0.1 noborder
 set obj rect from {tAOI_turn_off_bounds_begin}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1
 set obj rect from {tAOI_turn_on_bounds_begin}*1E+6 , graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
 
-# set x2tics add ("" -1E+6) # catch element for tics at NaN (workaround for "add_tic_user: list sort error")
 
 if (!isNaN({turn_off_t1})){\
 	set label 1 "90% V_G_E " at {turn_off_t1}*1E+6, 0.9*{V_GE_high} point pt 1 ps 2 front right offset 0,0 rotate by -45; \
@@ -91,6 +88,16 @@ if (!isNaN({turn_on_t4})){\
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
+ 
+ 
+fn_off = 'turn-off/{file_base}.png'
+fn_on  = 'turn-on/{file_base}.png'
+	 
+set output fn_off
+
+set xrange [-76:-66]
+set yrange [-50:800]
+
 {insertion_before_plot}
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\
@@ -99,3 +106,13 @@ plot \
 	fn skip headerlines u ($0*{TS_VGE}*1E+6 * decimation - t_offset_us):(column({CH_VGE}+1)) every decimation w l lw 2 t "V_G_E",\
 	fn skip headerlines u ($0*{TS_IE}*1E+6 * decimation - t_offset_us):(column({CH_IE}+1)) every decimation w l lw 2 t "I_E"
 {insertion_after_plot}
+
+unset output
+set output fn_on
+
+set xrange [-1:9]
+replot
+
+unset output
+
+	 

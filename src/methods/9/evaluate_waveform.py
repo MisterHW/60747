@@ -45,7 +45,10 @@ class analysisProcessor:
 			'{turn_off_t1};{turn_off_t2};{turn_off_t3};{turn_off_t4};{turn_on_t1};{turn_on_t2};{turn_on_t3};{turn_on_t4};' + \
 			'{E_turnoff_J};{E_turnon_J};{turn_off_t3};{turn_off_t4};' + \
 			'{I_droop_during_pause};'	
-		self.plotfile_template = same_path_as_script('../../setups/%s/gnuplot_template.plt' % args.setup)
+		plotfile = 'gnuplot_template.plt'
+		if self.data.args.plotfile is not None:
+			plotfile = self.data.args.plotfile
+		self.plotfile_template = same_path_as_script('../../setups/%s/%s' % (self.data.args.setup, plotfile))
 		
 	
 	def extract_voltage_and_current_values(self):
@@ -125,7 +128,7 @@ class analysisProcessor:
 			tAOI  = d.par['tAOI_turn_off_bounds'],
 			level = 0.1 * d.res['Ipk_turnoff'],
 			edge  = 'falling',
-			t_edge= 20E-9 )	
+			t_edge= 5E-9 )	
 		if t_off_t3[0] == None: 
 			print('Error: failed to evaluate turn_off_t3 marker in range %s' % repr(d.par['tAOI_turn_off_bounds']))
 			d.err['turn_off_t3'] = np.nan
@@ -139,7 +142,7 @@ class analysisProcessor:
 			tAOI  = d.par['tAOI_turn_off_bounds'],
 			level = 0.02 * d.res['Ipk_turnoff'],
 			edge  = 'falling',
-			t_edge= 200E-9 )
+			t_edge= 50E-9 )
 		if t_off_t4[0] == None: 
 			print('Error: failed to evaluate turn_off_t4 marker in range %s' % repr(d.par['tAOI_turn_off_bounds']))
 			d.err['turn_off_t4'] = np.nan
@@ -177,7 +180,8 @@ class analysisProcessor:
 			tAOI  = d.par['tAOI_turn_on_bounds'],
 			level = 0.1 * d.res['Ipk_turnoff'],
 			edge  = 'rising',
-			t_edge= 6E-9 )	
+			t_edge= 6E-9,
+			right_to_left = True)	
 		if t_on_t2[0] == None: 
 			print('Error: failed to evaluate turn_on_t2 marker in range %s' % repr(d.par['tAOI_turn_on_bounds']))
 			d.err['turn_on_t2'] = np.nan
@@ -282,7 +286,7 @@ class analysisProcessor:
 
 
 	def store_results(self, fn):
-		line = self.resolve_placeholders(self.output_table_line_template) + '\n'
+		line = self.resolve_placeholders(self.output_table_line_template, purge_unresolved = True) + '\n'
 		if fn == None:
 			print(line)
 		else:
@@ -305,7 +309,7 @@ class analysisProcessor:
 			s = s.replace('{%s}'%key, str(d.err[key]))	
 		if purge_unresolved:
 			placeholder_pattern = r'\{[^\}\/\\]*\}' # match "{text}" pattern except when text contains \ (gnuplot multiline) or / (gnuplot {/:bold ....} )
-			s = re.sub(placeholder_pattern, '(nan)',s)
+			s = re.sub(placeholder_pattern, 'nan',s)
 		return s
 			
 		
@@ -382,7 +386,8 @@ class analysisProcessor:
 				self.print_assertion_error(e)
 				
 			self.data.res['success'] = int(len(self.data.err) == 0) # 1: success, 0: errors occured.
-			self.visualize_output(purge_unresolved_placeholders = True)
+			if self.data.args.noplot is None:
+				self.visualize_output(purge_unresolved_placeholders = True)
 			
 		print("")
 		return result

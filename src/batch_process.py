@@ -33,6 +33,9 @@ def init_argparse():
 	parser.add_argument("-m", "--method", type=str, help="Analysis method identifier (folder name of a template in methods/).", required=True)
 	parser.add_argument("-o", "--outputfilename", default='analysis_result.csv', help='output filename for a .csv with results. Absolute path or relative to -d.')
 	parser.add_argument("-D", "--debug", action='store_true', default=False, help='turns on debugging output and exception reporting.')
+	parser.add_argument("-p", "--plotfile", required=False, help="specify a plot file associated with the setup that is not gnuplot_template.plt but contained the setup folder.")
+	parser.add_argument("--noplot", required=False, help="Do not create plots.")
+	
 	args = parser.parse_args()
 	
 	
