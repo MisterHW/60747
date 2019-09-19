@@ -43,6 +43,7 @@ class analysisProcessor:
 			'{success};{Modul};{Schalter};{R_shunt};"{file_base}";' + \
 			'{Temp.};{V_DC_1st_on_av};{I_rr_fwd_max};{I_rr_rev_max};{V_D_1st_on_av};' + \
 			'{t_rr};{Q_rr};{E_rr_J};{dI_rr_dt_falling_edge};{RRSF_tbta};{RRSF_dIdt};'
+		plotfile = 'gnuplot_template.plt'
 		if self.data.args.plotfile is not None:
 			plotfile = self.data.args.plotfile
 		self.plotfile_template = same_path_as_script('../../setups/%s/%s' % (self.data.args.setup, plotfile))
