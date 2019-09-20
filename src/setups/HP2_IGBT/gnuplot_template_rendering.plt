@@ -23,6 +23,7 @@ t_1st_pulse_rising  = t_zero - t_delay - t_1st_pulse
 t_1st_pulse_falling = t_zero - t_delay
 t_1st_pulse_falling_us = t_1st_pulse_falling*1E+6
 t_2nd_pulse_rising  = t_zero
+t_2nd_pulse_rising_us = t_2nd_pulse_rising*1E+6
 t_2nd_pulse_falling = t_zero + t_2nd_pulse
 t_3rd_period_end    = t_zero + t_2nd_pulse_falling + t_delay
 ###
@@ -31,7 +32,6 @@ tmp = fn.'.tmp'
 set print tmp
 print t_1st_pulse_rising , I1(t_1st_pulse_rising)
 print t_1st_pulse_falling, I1(t_1st_pulse_falling)
-t_1st_pulse_falling_us = t_1st_pulse_falling*1E+6
 print t_2nd_pulse_rising , I2(t_2nd_pulse_rising)
 print t_2nd_pulse_falling, I2(t_2nd_pulse_falling)
 print t_3rd_period_end, I2(t_2nd_pulse_falling) - (I1(t_1st_pulse_falling) - I2(t_2nd_pulse_rising))
