@@ -136,12 +136,15 @@ class analysisProcessor:
 	def calculate_rr_characteristics(self):
 		d = self.data
 		fwddecl = {key:np.nan for key in [
-			'rr_falling_edge', 
+			'rr_falling_edge',
+			'dI_rr_dt_falling_edge',
+			'rr_falling_edge_ratio_1',
 			'rr_rising_edge_90_25',
 			'rr_rising_edge_90_50',
 			'rr_rising_edge_50_25',
 			'rr_rising_edge_ratio_1',
-			'RRSF',
+			'RRSF_dIdt',
+			'RRSF_tbta',
 			't_rr_0_lin',
 			't_rr_1_lin_90_25',
 			't_rr_1_lin_90_50',
@@ -157,31 +160,29 @@ class analysisProcessor:
 			[d.res['t_rr_50pc_FM_falling'], d.res['t_rr_50pc_RM_falling']] )
 		rr_falling_edge_neg = d.CH[d.par['CH_ID']].lin_fit(
 			[d.res['t_rr_0'], d.res['t_rr_50pc_RM_falling']] )
-		reconstruct_t_rr_50pc_FM_falling = False
-		if rr_falling_edge[0] == None:
-			print("Error: rr_falling_edge fit failed.")
+
+		if (rr_falling_edge[0] == None) or (rr_falling_edge_neg[0] == None):
+			print("Error: rr_falling_edge or rr_falling_edge_neg fit failed.")
 			d.err.update(fwddecl)
 			return
 		else:
 			d.res['rr_falling_edge'] = rr_falling_edge
 			fwddecl.pop('rr_falling_edge')
+			d.res['dI_rr_dt_falling_edge'] = d.res['rr_falling_edge'][1]
+			fwddecl.pop('dI_rr_dt_falling_edge')
 			
-			if rr_falling_edge_neg[0] == None:
-				print("\tWarning: rr_falling_edge_neg edge fit failed - cannot verify rr_falling_edge against rr_falling_edge_neg.")
-			else:
-				if not 0.9 < (rr_falling_edge[1]/rr_falling_edge_neg[1]) < 1.1:
-					print("\tWarning: rr_falling_edge instability - reverting from [t(0.5I_FM);t(0.5I_RM)] to [t0;t(0.5I_RM)].")
-					reconstruct_t_rr_50pc_FM_falling = True
-					d.res['rr_falling_edge']  = rr_falling_edge_neg
+			rr_falling_edge_ratio_1 = rr_falling_edge[1]/rr_falling_edge_neg[1]
+			d.res['rr_falling_edge_ratio_1'] = rr_falling_edge_ratio_1
+			fwddecl.pop('rr_falling_edge_ratio_1')
 			
-		d.res['dI_rr_dt_falling_edge'] = d.res['rr_falling_edge'][1]
-		I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
-		inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
-		t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
-		if reconstruct_t_rr_50pc_FM_falling:
-			t_rr_50pc_FM_falling_new = inv_rr_falling_edge(0.5 * d.res['I_rr_fwd_max'])[0]
-			print("\tInfo: changing t_rr_50pc_FM_falling from %g to %g." % (d.res['t_rr_50pc_FM_falling'], t_rr_50pc_FM_falling_new))
-			d.res['t_rr_50pc_FM_falling'] = t_rr_50pc_FM_falling_new
+			if not 0.9 < rr_falling_edge_ratio_1 < 1.1:
+				print("\tWarning: rr_falling_edge indicates current curve is bent when comparing linear fit slopes over [t(0.5I_FM);t(0.5I_RM)] vs. [t0;t(0.5I_RM)] (threshold +/-10%.")
+				# I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
+				inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
+				t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
+				t_rr_50pc_FM_falling_new = inv_rr_falling_edge(0.5 * d.res['I_rr_fwd_max'])[0]
+				print("\tInfo: rr_falling_edge discrepancy would result in a change of t_rr_50pc_FM_falling from %g to %g." % (d.res['t_rr_50pc_FM_falling'], t_rr_50pc_FM_falling_new))
+		
 		
 		if not (d.par['tAOI_rr_event'][0] < t_rr_0_lin < d.res['t_rr_RM']):
 			print("Error: t_rr_0_lin did not evaluate to a value within [tAOI_rr_event;t_rr_RM]")
