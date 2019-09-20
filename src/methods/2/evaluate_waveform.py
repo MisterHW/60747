@@ -65,7 +65,7 @@ class analysisProcessor:
 		# treat reverse recover as mandatory
 		d.res['V_D_1st_on_av'] = d.CH[d.par['CH_VD']].average(d.par['tAOI_D_FWD'])[0]
 		d.res['V_DC_1st_on_av'] = d.CH[d.par['CH_VDC']].average(d.par['tAOI_D_FWD'])[0]
-		d.res['I_rr_fwd_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.98)
+		d.res['I_rr_fwd_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.95)
 		d.res['I_rr_rev_max'] = d.CH[d.par['CH_ID']].percentile_value(d.par['tAOI_rr_event'], 0.001)	
 		
 		d.res['I_1st_on_fit_a_bx']  = d.CH[d.par['CH_ID']].lin_fit(d.par['tAOI_D_FWD'])
@@ -300,7 +300,22 @@ class analysisProcessor:
 			for key in sorted(d.err.keys()):
 				print("\t%s = %s" % (key, repr(d.err[key])))
 			
+
+	def summary_strings(self):
+		d = self.data 
+		summary = []
 		
+		summary.append("%s = %.1f %s" % ('T', float(d.hdr['Temp.']) if 'Temp.' in d.hdr else np.nan, '°C'))
+		summary.append("%s = %.1f %s" % ('V_D_C', d.res['V_DC_1st_on_av'] if 'V_DC_1st_on_av' in d.res else np.nan, 'V'))
+		summary.append("%s = %.2f %s" % ('I\_F\_M', d.res['I_rr_fwd_max'] if 'I_rr_fwd_max' in d.res else np.nan, 'A'))
+		summary.append("%s = %.2f %s" % ('I\_R\_M', d.res['I_rr_rev_max'] if 'I_rr_rev_max' in d.res else np.nan, 'A'))
+		summary.append("%s = %.2f %s" % ('dI_r_r/dt', d.res['dI_rr_dt_falling_edge']/1E+6 if 'dI_rr_dt_falling_edge' in d.res else np.nan, 'A/µs'))
+		summary.append("%s = %.2f %s" % ('t\_r\_r', d.res['t_rr']*1E+9 if 't_rr' in d.res else np.nan, 'ns'))
+		summary.append("%s = %.2f %s" % ('Q\_r\_r', d.res['Q_rr']*1E+6 if 'Q_rr' in d.res else np.nan, 'µJ'))
+		summary.append("%s = %.2f %s" % ('RRSF', d.res['RRSF_dIdt'] if 'RRSF_dIdt' in d.res else np.nan, ''))
+		
+		return summary
+	
 
 	def visualize_output(self, purge_unresolved_placeholders = False):
 		d = self.data 
@@ -308,12 +323,13 @@ class analysisProcessor:
 		### generate output and gnuplot file for documentation
 		
 		self.print_params_and_results()
-			
-		d.par['insertion_before_plot'] = ''
+		
+		d.par['insertion_before_plot'] = 'set obj rect from graph 0.75, 0.65 to graph 1, 1 fc "white" fs transparent solid 0.5 front\n'+\
+			'set label "%s" at graph 0.95, 0.95 right front\n' % ("\\n".join(self.summary_strings()))
 		d.par['insertion_after_plot']  = ''
 		
 		if len(d.err) > 0:
-			d.par['insertion_before_plot'] += 'set label 10000 "{/:Bold FAILED: %s}" font "Verdana,16" tc rgb "red" at graph 0.5, graph 0.5 center front\n' % (", ".join(d.err.keys()).replace('_', '\\\_'))
+			d.par['insertion_before_plot'] += 'set label 10000 "{/:Bold FAILED:} %s" font "Verdana,16" tc rgb "red" at graph 0.5, graph 0.5 center front\n' % (",\\n".join(d.err.keys()).replace('_', '\\\_'))
 		
 		# generate gnuplot script for visualization and validation
 		f = open(self.plotfile_template, 'r', encoding='cp1252')
