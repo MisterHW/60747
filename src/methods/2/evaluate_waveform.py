@@ -175,22 +175,23 @@ class analysisProcessor:
 			d.res['rr_falling_edge_ratio_1'] = rr_falling_edge_ratio_1
 			fwddecl.pop('rr_falling_edge_ratio_1')
 			
+			# I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
+			inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
+			t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
+		
 			if not 0.9 < rr_falling_edge_ratio_1 < 1.1:
 				print("\tWarning: rr_falling_edge indicates current curve is bent when comparing linear fit slopes over [t(0.5I_FM);t(0.5I_RM)] vs. [t0;t(0.5I_RM)] (threshold +/-10%.")
-				# I_rr_falling_edge   = lambda t, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [t, a + b*t]
-				inv_rr_falling_edge = lambda I, a=d.res['rr_falling_edge'][0], b=d.res['rr_falling_edge'][1] : [(I - a) / b, I]
-				t_rr_0_lin = inv_rr_falling_edge(0.0)[0]
 				t_rr_50pc_FM_falling_new = inv_rr_falling_edge(0.5 * d.res['I_rr_fwd_max'])[0]
 				print("\tInfo: rr_falling_edge discrepancy would result in a change of t_rr_50pc_FM_falling from %g to %g." % (d.res['t_rr_50pc_FM_falling'], t_rr_50pc_FM_falling_new))
 		
 		
-		if not (d.par['tAOI_rr_event'][0] < t_rr_0_lin < d.res['t_rr_RM']):
-			print("Error: t_rr_0_lin did not evaluate to a value within [tAOI_rr_event;t_rr_RM]")
-			d.err.update(fwddecl)
-			return
-		else:
-			d.res['t_rr_0_lin'] = t_rr_0_lin
-			fwddecl.pop('t_rr_0_lin')		
+			if not (d.par['tAOI_rr_event'][0] < t_rr_0_lin < d.res['t_rr_RM']):
+				print("Error: t_rr_0_lin did not evaluate to a value within [tAOI_rr_event;t_rr_RM]")
+				d.err.update(fwddecl)
+				return
+			else:
+				d.res['t_rr_0_lin'] = t_rr_0_lin
+				fwddecl.pop('t_rr_0_lin')		
 		
 		# linear fit on the rising edge after I_RM 
 		# key points are with 90% I_RM and 25% I_RM intersections 
