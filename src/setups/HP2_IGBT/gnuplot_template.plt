@@ -45,7 +45,7 @@ set title "Doppelpulstest: {file_base}" font 'Verdana,16'
 set mxtics 5
 set mytics 5 
 set xtics nomirror
-set x2tics nomirror
+set x2tics nomirror offset 0,-0.5
 set grid ytics xtics
 set link x2 via x inverse x
 set mx2tics 4

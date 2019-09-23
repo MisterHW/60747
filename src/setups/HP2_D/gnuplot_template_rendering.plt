@@ -1,5 +1,5 @@
 reset
-set term png enhanced truecolor size 1200,800
+set term png enhanced truecolor size 1200,800 font 'Verdana,14'
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -48,22 +48,22 @@ set style arrow 8 heads size screen 0.008,90 ls 2 front
 annotation = 5
 
 if(annotation == 1) \
-	set title "turn-off and turn-on AOIs"; \
+	set title "turn-off and turn-on AOIs - {file_base}"; \
 	set obj rect from {tAOI_turn_off_bounds_begin}*1E+6, graph 0 to {tAOI_turn_off_bounds_end}*1E+6, graph 1; \
 	set obj rect from {tAOI_turn_on_bounds_begin}*1E+6, graph 0 to {tAOI_turn_on_bounds_end}*1E+6, graph 1
 
 if(annotation == 2) \
-	set title "first and second pulse intervals"; \
+	set title "first and second pulse intervals - {file_base}"; \
 	set obj rect from {t_1st_rise_nom}*1E+6, graph 0 to {t_1st_fall_nom}*1E+6, graph 1; \
 	set obj rect from {t_2nd_rise_nom}*1E+6, graph 0 to {t_2nd_fall_nom}*1E+6, graph 1
 	
 if(annotation == 3) \
-	set title "forward-recovery and reverse-recovery AOIs"; \
+	set title "forward-recovery and reverse-recovery AOIs - {file_base}"; \
 	set obj rect from {tAOI_1st_fr_event_begin}*1E+6, graph 0 to {tAOI_1st_fr_event_end}*1E+6, graph 1; \
 	set obj rect from {tAOI_rr_event_begin}*1E+6, graph 0 to {tAOI_rr_event_end}*1E+6, graph 1
 
 if(annotation == 4) \
-	set title 'tAOI\_D\_FWD'; \
+	set title 'tAOI\_D\_FWD - {file_base}'; \
 	set obj rect from {tAOI_D_FWD_begin}*1E+6, graph 0 to {tAOI_D_FWD_end}*1E+6, graph 1; \
 	set arrow from {tAOI_D_FWD_begin}*1E+6, {V_D_1st_on_av} to {tAOI_D_FWD_end}*1E+6, {V_D_1st_on_av} as 8; \
 	set label sprintf("V_D = %.3f V", {V_D_1st_on_av} ) at ({tAOI_D_FWD_begin}+{tAOI_D_FWD_end})*0.5*1E+6,{V_D_1st_on_av} center offset 0,-0.75 front; \
@@ -74,9 +74,10 @@ if(annotation == 4) \
 	set label sprintf("I_F_M = %.3f A", -{I_rr_fwd_lin_estimate} ) at {t_2nd_rise_nom}*1E+6, -{I_rr_fwd_lin_estimate} left offset 0.5,0 front
 	
 if(annotation == 5) \
-	set title 'reverse-recovery event'; \
+	set title 'reverse-recovery event - {file_base}'; \
 	set obj rect from {tAOI_rr_event_begin}*1E+6, graph 0 to {tAOI_rr_event_end}*1E+6, graph 1; \
 	set xrange [{tAOI_rr_event_begin}*1E+6-0.5:{tAOI_rr_event_end}*1E+6+0.5]; \
+	set yrange [-250:650]; \
 	set y2tics add ("I_F_M" {I_rr_fwd_max} ); \
 	set arrow from {tAOI_rr_event_begin}*1E+6, 1.0*{I_rr_fwd_max}  to {tAOI_rr_event_end}*1E+6, 1.0*{I_rr_fwd_max} as 7 back; \
 	set y2tics add ("0.5*I_F_M" 0.5*{I_rr_fwd_max} ); \

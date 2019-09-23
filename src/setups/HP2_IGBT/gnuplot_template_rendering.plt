@@ -1,5 +1,5 @@
 reset
-set term png enhanced size 1200,800
+set term png enhanced truecolor size 1200,800 font 'Verdana,14'
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -47,7 +47,7 @@ set title "Doppelpulstest: {file_base}" font 'Verdana,16'
 set mxtics 5
 set mytics 5 
 set xtics nomirror
-set x2tics nomirror
+set x2tics nomirror offset 0,-0.5
 set grid ytics xtics
 set link x2 via x inverse x
 set mx2tics 4
@@ -66,7 +66,7 @@ if (!isNaN({turn_off_t1})){\
 	set x2tics add ("A" {turn_off_t1}*1E+6)}
 if (!isNaN({turn_off_t2})){\
 	set label 2 "90% I_p_k" at {turn_off_t2}*1E+6, 0.9*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
-	set x2tics add ("B" {turn_off_t2}*1E+6)} 
+	set x2tics add ("B" {turn_off_t2}*1E+6)}
 if (!isNaN({turn_off_t3})){\
 	set label 3 "10% I_p_k" at {turn_off_t3}*1E+6, 0.1*{Ipk_turnoff} point pt 1 ps 2 front rotate by 45; \
 	set x2tics add ("C" {turn_off_t3}*1E+6)} 

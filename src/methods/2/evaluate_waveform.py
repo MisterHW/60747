@@ -204,14 +204,18 @@ class analysisProcessor:
 			
 		d.res['t_rr'] = d.res['t_rr_1_lin_90_25'] - d.res['t_rr_0']
 		d.res['t_rr_int_end'] = d.res['t_rr_0'] + 5 * d.res['t_rr']
-		d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0]
+		# note: WaveformAnalyzer.integral() currently requires equidistant samples with no gaps (not asserted in code)
+		# d.res['Q_rr'] = -d.CH[d.par['CH_ID']].integral([d.res['t_rr_0'], d.res['t_rr_int_end']])[0] 
+		# new: np.trapz() integration
+		Q_rr_waveform = d.CH[d.par['CH_ID']].samples_in_AOI([d.res['t_rr_0'], d.res['t_rr_int_end']])
+		d.res['Q_rr'] = -np.trapz(Q_rr_waveform[1], Q_rr_waveform[0])
 		
-		turnoff_prod = wfa.arithmetic_operation(
+		E_rr_waveform = wfa.arithmetic_operation(
 			WFA_list = [d.CH[d.par['CH_VD']], d.CH[d.par['CH_ID']]], 
 			tAOI = [d.res['t_rr_0'], d.res['t_rr_int_end']], 
 			func = lambda vals : vals[0] * vals[1],
 			generate_time_coords = True )
-		d.res['E_rr_J'] = -np.trapz(turnoff_prod[1], turnoff_prod[0]) 
+		d.res['E_rr_J'] = -np.trapz(E_rr_waveform[1], E_rr_waveform[0]) 
 
 		
 		# paritioned fits on the rising edge after I_RM - line 1
@@ -309,10 +313,11 @@ class analysisProcessor:
 		summary.append("%s = %.1f %s" % ('V_D_C', d.res['V_DC_1st_on_av'] if 'V_DC_1st_on_av' in d.res else np.nan, 'V'))
 		summary.append("%s = %.2f %s" % ('I\_F\_M', d.res['I_rr_fwd_max'] if 'I_rr_fwd_max' in d.res else np.nan, 'A'))
 		summary.append("%s = %.2f %s" % ('I\_R\_M', d.res['I_rr_rev_max'] if 'I_rr_rev_max' in d.res else np.nan, 'A'))
-		summary.append("%s = %.2f %s" % ('dI_r_r/dt', d.res['dI_rr_dt_falling_edge']/1E+6 if 'dI_rr_dt_falling_edge' in d.res else np.nan, 'A/µs'))
+		summary.append("%s = %.1f %s" % ('dI_r_r/dt', d.res['dI_rr_dt_falling_edge']/1E+6 if 'dI_rr_dt_falling_edge' in d.res else np.nan, 'A/µs'))
 		summary.append("%s = %.2f %s" % ('t\_r\_r', d.res['t_rr']*1E+9 if 't_rr' in d.res else np.nan, 'ns'))
-		summary.append("%s = %.2f %s" % ('Q\_r\_r', d.res['Q_rr']*1E+6 if 'Q_rr' in d.res else np.nan, 'µJ'))
-		summary.append("%s = %.2f %s" % ('RRSF', d.res['RRSF_dIdt'] if 'RRSF_dIdt' in d.res else np.nan, ''))
+		summary.append("%s = %.2f %s" % ('Q\_r\_r', d.res['Q_rr']*1E+6 if 'Q_rr' in d.res else np.nan, 'µC'))
+		summary.append("%s = %.4f %s" % ('E\_r\_r', d.res['E_rr_J']*1E+3 if 'E_rr_J' in d.res else np.nan, 'mJ'))
+		summary.append("%s = %.2f" % ('RRSF', d.res['RRSF_dIdt'] if 'RRSF_dIdt' in d.res else np.nan))
 		
 		return summary
 	
@@ -324,8 +329,8 @@ class analysisProcessor:
 		
 		self.print_params_and_results()
 		
-		d.par['insertion_before_plot'] = 'set obj rect from graph 0.75, 0.65 to graph 1, 1 fc "white" fs transparent solid 0.5 front\n'+\
-			'set label "%s" at graph 0.95, 0.95 right front\n' % ("\\n".join(self.summary_strings()))
+		d.par['insertion_before_plot'] = 'set obj rect from graph 0.725, 0.675 to graph 1, 1 fc "white" fs transparent solid 0.667 front\n'+\
+			'set label "%s" at graph 0.975, 0.95 right front font "Consolas"\n' % ("\\n".join(self.summary_strings()))
 		d.par['insertion_after_plot']  = ''
 		
 		if len(d.err) > 0:

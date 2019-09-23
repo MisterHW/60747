@@ -1,5 +1,5 @@
 reset
-set term wxt enhanced persist size 1200,800 font 'Verdana,14'
+set term png enhanced truecolor size 1200,800 font 'Verdana,14'
 nan = NaN
 isNaN(x) = x == NaN ? 1 : 0 
 fn = '{file_base}'
@@ -47,7 +47,7 @@ set title "Doppelpulstest: {file_base}" font 'Verdana,16'
 set mxtics 5
 set mytics 5 
 set xtics nomirror
-set x2tics nomirror
+set x2tics nomirror offset 0,-0.5
 set grid ytics xtics
 set link x2 via x inverse x
 set mx2tics 4

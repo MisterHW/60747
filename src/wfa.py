@@ -72,7 +72,14 @@ class WaveformAnalyzer:
 		y = self.s[int(round(sAOI[0])):int(round(sAOI[1]))]
 		x = self.samples_t(tAOI, len(y))
 		indices = np.argsort(y)
-		return np.array(list(zip(x[indices],y[indices]))) 		
+		return np.array(list(zip(x[indices],y[indices]))) 
+
+
+	def samples_in_AOI(self, tAOI):
+		sAOI = self.time_to_smp(tAOI)
+		y = self.s[int(round(sAOI[0])):int(round(sAOI[1]))]
+		x = self.samples_t(tAOI, len(y))
+		return [x, y]	
 		
 		
 	def sorted_samples(self, tAOI):
@@ -93,11 +100,6 @@ class WaveformAnalyzer:
 			return None
 		else:
 			return [ sorted_samples[max(0, min(round((nsmp-1)*p), nsmp-1))] for p in percentiles ]
-			
-		
-	def samples_in_AOI(self, tAOI):
-		# TODO 
-		return []
 		
 		
 	def sorted_samples_in_rect(self, tAOI, yAOI):
