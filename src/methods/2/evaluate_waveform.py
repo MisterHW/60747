@@ -356,8 +356,8 @@ class analysisProcessor:
 		
 		if waveform_import.read_file_header_and_data(filename, self.data):
 			try: 
-				preprocess_data.assign_advanced_analysis_parameters(self.data)
 				preprocess_data.prepare_data(self.data)
+				preprocess_data.assign_advanced_analysis_parameters(self.data)
 				print("analysis:")
 				self.extract_voltage_and_current_values()
 			except AssertionError as e:

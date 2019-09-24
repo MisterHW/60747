@@ -77,16 +77,7 @@ class analysisProcessor:
 		
 		d.res['I_droop_during_pause'] = d.res['I_1st_fall_estimate'][1] - d.res['I_2nd_rise_estimate'][1]
 		
-		# current-compensated V_CE at turn-off
-		#shunt_dropout_correction =  lambda vals, R=d.par['R_shunt'] : vals[0] - R * vals[1]
-		#V_CE_corrected = wfa.arithmetic_operation(
-		#	WFA_list = [CH[par['CH_VCE']], CH[par['CH_IE']]], 
-		#	tAOI = d.par['tAOI_V_CE'], 
-		#	func = shunt_dropout_correction )
-		#res['V_CE_turnoff'] = np.average(V_CE_corrected[1])
-			
-		# new implementation employing CH_VCE_corr
-		d.res['V_CE_turnoff'] = d.CH[d.par['CH_VCE_corr']].average(d.par['tAOI_V_CE'])[0]
+		d.res['V_CE_turnoff'] = d.CH[d.par['CH_VCE']].average(d.par['tAOI_V_CE'])[0]
 		
 		
 	def extract_turnoff_timing_markers(self):
@@ -206,7 +197,7 @@ class analysisProcessor:
 			
 		# turn-on marker 4: typically V_CE_corr = 0.02 * V_DC as per 60747-9, see d.par['DET_turn_on_t4_fraction']
 		print("determining t_on_t4:")
-		t_on_t4 = d.CH[d.par['CH_VCE_corr']].find_level_crossing(
+		t_on_t4 = d.CH[d.par['CH_VCE']].find_level_crossing(
 			tAOI  = d.par['tAOI_turn_on_bounds'],
 			level = d.par['DET_turn_on_t4_fraction'] * d.res['V_DC'], 
 			edge  = 'falling',
@@ -361,8 +352,8 @@ class analysisProcessor:
 		
 		if waveform_import.read_file_header_and_data(filename, self.data):
 			try: 
-				preprocess_data.assign_advanced_analysis_parameters(self.data)
 				preprocess_data.prepare_data(self.data)
+				preprocess_data.assign_advanced_analysis_parameters(self.data)
 				print("analysis:")
 				self.extract_voltage_and_current_values()
 			except AssertionError as e:

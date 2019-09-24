@@ -20,8 +20,14 @@ class WaveformAnalyzer:
 		self.timebase_unitstr = timebase_unitstr
 		self.id_str = id_str 
 		
+		
+	def multiply_by(self, f):
+		self.s = self.s * f
+		
+		
 	def invert(self):
 		self.s = self.s * -1
+		
 		
 	def __force_inrange(self, sAOI):
 		initial_sAOI = sAOI

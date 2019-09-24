@@ -12,11 +12,15 @@ def assign_basic_analysis_parameters(analysis_data):
 	d.par['file_ext'] = '.txt'
 	d.par['ndatacols'] = 4
 	d.par['skipped_header_rows'] = 4
-	d.par['R_shunt'] = 0.00984
-	d.par['CH_VGE'] = 0 # Channel 1 : gate-emitter voltage
-	d.par['CH_VDC'] = 1 # Channel 2 : DC link voltage 
-	d.par['CH_VCE'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
-	d.par['CH_IE']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
+	d.par['R_shunt'] = 0.009888
+	d.par['CH_VGE_raw'] = 0 # Channel 1 : gate-emitter voltage
+	d.par['CH_VGE'] = d.par['CH_VGE_raw']
+	d.par['CH_VDC_raw'] = 1 # Channel 2 : DC link voltage (uncorrected)
+	# d.par['CH_VDC'] see prepare_data()
+	d.par['CH_VCE_raw'] = 2 # Channel 3 : collector-shunt voltage (collector-emitter voltage + shunt and contact resistance dropout)
+	d.par['CH_VCE'] = d.par['CH_VCE_raw']
+	d.par['CH_IE_raw']  = 3 # Channel 4 : sensed current (shunt voltage * 100 A/V)
+	d.par['CH_IE'] = d.par['CH_IE_raw']
 	
 	### detection parameters
 	# 60747-9 calls for 0.02 (2% V_CE) which however excludes low voltage measurements.
@@ -80,34 +84,40 @@ def assign_advanced_analysis_parameters(analysis_data):
 		
 def prepare_data(analysis_data):
 	d = analysis_data
-	# create additional V_CE_corr waveform corrected for shunt dropout voltage
 	
-	shunt_dropout_correction =  lambda vals, R=d.par['R_shunt'] : vals[0] - R * vals[1]
-		
-	V_CE_corrected = None
+	# Note: files are not overwritten, all plots have to copy the following corrections.
 	
-	if ( (d.CH[d.par['CH_VCE']].timebase == d.CH[d.par['CH_IE']].timebase) and 
-		(d.CH[d.par['CH_IE']].t0_samplepos == d.CH[d.par['CH_IE']].t0_samplepos) and 
-		(len(d.CH[d.par['CH_VCE']].s) == len(d.CH[d.par['CH_IE']].s)) ):
+	# apply real shunt value conversion factor (scope has been set up with 10mOhm nominal shunt resistance)
+	d.CH[d.par['CH_IE']].multiply_by(1/(100.0 * d.par['R_shunt']))	
+	
+	# shunt and DC link capacitor are series connected 
+	# * note: forward voltage is recorded as negative, current as positive
+	# * subtract shunt voltage from VDC_raw
+	
+	V_DC_corrected = None
+	
+	if ( (d.CH[d.par['CH_VDC_raw']].timebase == d.CH[d.par['CH_IE']].timebase) and 
+		(d.CH[d.par['CH_VDC_raw']].t0_samplepos == d.CH[d.par['CH_IE']].t0_samplepos) and 
+		(len(d.CH[d.par['CH_VDC_raw']].s) == len(d.CH[d.par['CH_IE']].s)) ):
 		# shortcut: work directly on the waveform data 
 		# assuming channels have equal and aligned number of equidistant samples
-		V_CE_corrected = d.CH[d.par['CH_VCE']].s - d.par['R_shunt'] * d.CH[d.par['CH_IE']].s
+		V_DC_corrected = d.CH[d.par['CH_VDC_raw']].s - d.par['R_shunt'] * d.CH[d.par['CH_IE']].s
 	else:	
 		# fallback: slow version with interpolation
-		V_CE_corrected = wfa.arithmetic_operation(
-			WFA_list = [d.CH[d.par['CH_VCE']], d.CH[d.par['CH_IE']]], 
-			tAOI = d.CH[d.par['CH_VCE']].time_span(), 
+		# create additional V_CE_corr waveform corrected for shunt dropout voltage
+		shunt_dropout_correction =  lambda vals, R=d.par['R_shunt'] : vals[0] - R * vals[1]
+
+		V_DC_corrected = wfa.arithmetic_operation(
+			WFA_list = [d.CH[d.par['CH_VDC_raw']], d.CH[d.par['CH_IE']]], 
+			tAOI = d.CH[d.par['CH_VDC_raw']].time_span(), 
 			func = shunt_dropout_correction )[1]
 
 	d.CH.append( wfa.WaveformAnalyzer(
-		samples_data     = V_CE_corrected , 
-		timebase         = d.CH[d.par['CH_VCE']].timebase, 
-		t0_samplepos     = d.CH[d.par['CH_VCE']].t0_samplepos,
+		samples_data     = V_DC_corrected , 
+		timebase         = d.CH[d.par['CH_VDC_raw']].timebase, 
+		t0_samplepos     = d.CH[d.par['CH_VDC_raw']].t0_samplepos,
 		timebase_unitstr = 's',
-		id_str           = 'Channel %d (corr)' % (d.par['CH_VCE']+1) ))
+		id_str           = 'Channel %d (corr)' % (d.par['CH_VDC_raw']+1) ))
 		
-	d.par['CH_VCE_corr'] = len(d.CH) - 1
-	
-
-	
-	
+	# update channel reference
+	d.par['CH_VDC'] = len(d.CH) - 1

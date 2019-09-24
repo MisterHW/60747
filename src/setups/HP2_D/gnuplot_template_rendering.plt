@@ -110,12 +110,12 @@ set output fn_reverse_recovery
 {insertion_before_plot}
 
 plot \
-	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID}+1)):( \
-		filter(($0*{TS_ID} *1E+6 * decimation - t_offset_us), {t_rr_0}*1E+6, {t_rr_int_end}*1E+6, 0.0, -column({CH_ID}+1)) \
+	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID_raw}+1)):( \
+		filter(($0*{TS_ID} *1E+6 * decimation - t_offset_us), {t_rr_0}*1E+6, {t_rr_int_end}*1E+6, 0.0, -column({CH_ID_raw}+1)) \
 		) every decimation with filledcurves fs transparent solid 0.50 lc rgb "gold",\
-	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):( column({CH_VDC}+1)) every decimation w l lw 2 t "V_D_C",\
-	fn skip headerlines u ($0*{TS_VD} *1E+6 * decimation - t_offset_us):( column({CH_VD}+1)) every decimation w l lw 2 t "V_D",\
-	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID}+1)) every decimation w l lw 2 t "I_D"
+	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):( column({CH_VDC_raw}+1)) every decimation w l lw 2 t "V_D_C",\
+	fn skip headerlines u ($0*{TS_VD} *1E+6 * decimation - t_offset_us):( column({CH_VD_raw}+1) - Rshunt * column({CH_ID_raw}+1)) every decimation w l lw 2 t "V_D",\
+	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(-column({CH_ID_raw}+1)) every decimation w l lw 2 t "I_D"
 		
 {insertion_after_plot}
 
