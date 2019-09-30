@@ -146,7 +146,7 @@ class WaveformAnalyzer:
 			a = mean_y - b * mean_x
 			success = True
 		else: 
-			a = samples_y[0]
+			a = s_y[0]
 			b = 0
 			success = False 
 		return [a,b, success]

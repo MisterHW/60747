@@ -91,11 +91,15 @@ if (!isNaN({turn_on_t4})){\
 
 set xlabel 'time (µs)'
 set ylabel 'voltage (V) / current (A)'
+
+# current channel coefficient (nominally 100 A/V (10 mOhm shunt), actual value 102.145 A/V (9.79 mOhm shunt))
+Ic = 1 / (100.0 * Rshunt)
+
 {insertion_before_plot}
 plot \
 	$IEData u ($1*1E+6):2 w l t 'I_E(fit)' lc rgb 'gray' lw 2,\
 	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC_raw}+1)) every decimation w l lw 2 t "V_D_C",\
-	fn skip headerlines u ($0*{TS_VCE}*1E+6 * decimation - t_offset_us):(column({CH_VCE_raw}+1) - Rshunt*column({CH_IE_raw}+1)) every decimation w l lw 2 t "V_C_E",\
+	fn skip headerlines u ($0*{TS_VCE}*1E+6 * decimation - t_offset_us):(column({CH_VCE_raw}+1) - Rshunt * Ic * column({CH_IE_raw}+1)) every decimation w l lw 2 t "V_C_E",\
 	fn skip headerlines u ($0*{TS_VGE}*1E+6 * decimation - t_offset_us):(column({CH_VGE_raw}+1)) every decimation w l lw 2 t "V_G_E",\
-	fn skip headerlines u ($0*{TS_IE}*1E+6 * decimation - t_offset_us):(column({CH_IE_raw}+1)) every decimation w l lw 2 t "I_E"
+	fn skip headerlines u ($0*{TS_IE}*1E+6 * decimation - t_offset_us):(Ic * column({CH_IE_raw}+1)) every decimation w l lw 2 t "I_E"
 {insertion_after_plot}
