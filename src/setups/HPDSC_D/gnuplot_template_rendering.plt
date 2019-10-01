@@ -107,14 +107,14 @@ fn_reverse_recovery = "rr/{file_base}.png"
 set output fn_reverse_recovery
 
 # current channel coefficient (nominally 100 A/V (10 mOhm shunt), actual value 101.626 A/V (9.84 mOhm shunt))
-Ic = -1 / (100.0 * Rshunt)
+Ic = 1 / (100.0 * Rshunt)
 
 {insertion_before_plot}
 plot \
 	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(Ic * column({CH_ID_raw}+1)):( \
 		filter(($0*{TS_ID} *1E+6 * decimation - t_offset_us), {t_rr_0}*1E+6, {t_rr_int_end}*1E+6, 0.0, Ic * column({CH_ID_raw}+1)) \
 		) every decimation with filledcurves fs transparent solid 0.50 lc rgb "gold",\
-	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC_raw}+1) + Rshunt * Ic * column({CH_ID_raw}+1)) every decimation w l lw 2 t "V_D_C",\
+	fn skip headerlines u ($0*{TS_VDC}*1E+6 * decimation - t_offset_us):(column({CH_VDC_raw}+1) - Rshunt * Ic * column({CH_ID_raw}+1)) every decimation w l lw 2 t "V_D_C",\
 	fn skip headerlines u ($0*{TS_VD} *1E+6 * decimation - t_offset_us):(column({CH_VD_raw}+1)) every decimation w l lw 2 t "V_D",\
 	fn skip headerlines u ($0*{TS_ID} *1E+6 * decimation - t_offset_us):(Ic * column({CH_ID_raw}+1)) every decimation w l lw 2 t "I_D"
 {insertion_after_plot}
