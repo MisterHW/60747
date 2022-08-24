@@ -399,7 +399,7 @@ class analysisProcessor:
 		global waveform_import, preprocess_data
 		# load evaluate_waveform from subdirectory: formats/<args.inputformat>/waveform_import.py
 		waveform_import   = importlib.import_module('formats.%s.waveform_import' % self.data.args.inputformat)
-		# load evaluate_waveform from subdirectory: setups/<args.setup>/preprocess_data.py
+		# load preprocess_data   from subdirectory: setups/<args.setup>/preprocess_data.py
 		preprocess_data   = importlib.import_module('setups.%s.preprocess_data'  % self.data.args.setup)
 		
 		print("processing:\n\t'%s'" % filename)
